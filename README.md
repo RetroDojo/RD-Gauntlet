@@ -24,6 +24,14 @@ Reusable, device-agnostic ADB-driven hardware test orchestration for RetroDojo A
 - `haptic-intensity-check.sh` - pure-ADB haptics feasibility probe (optional, may report unsupported)
 - `perfetto-surfaceview-fps.sh` + `Parse-PerfettoSurfaceFps.py` - Perfetto capture + host parser prototype (optional)
 - `Invoke-StickDriftCheck.ps1` - manual idle analog drift checker (standalone helper)
+- `New-ComparisonDataset.ps1` - rebuilds long-format cross-run/cross-device comparison dataset
+- `New-ComparisonCharts.ps1` - generates first-pass comparison charts from the dataset
+
+## Comparison dataset + charts (Phase 1)
+
+For cross-run/cross-device aggregation and baseline chart generation, see:
+
+- [`README-comparison-dataset.md`](./README-comparison-dataset.md)
 
 ## Configure devices
 
