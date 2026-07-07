@@ -1,5 +1,7 @@
 # Android Device Bench Suite
 
+> New to ADB, PowerShell, or Android device setup? Start with **[`NEWBIE-GUIDE.md`](./NEWBIE-GUIDE.md)** first. It is the step-by-step version for first-time users.
+
 Reusable, device-agnostic ADB-driven hardware test orchestration for RetroDojo Android handheld reviews. The suite launches apps, captures screenshots, logs telemetry with `telemetry-monitor.sh`, saves frame/power diagnostics, records a short cooldown phase, and produces a Markdown report.
 
 ## Prerequisites
