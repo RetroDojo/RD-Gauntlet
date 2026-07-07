@@ -1,0 +1,13 @@
+[
+  {
+    "name": "RPC6",
+    "adbSerial": "MC94516AQF051901944",
+    "notes": "Retroid Pocket Classic 6, Snapdragon G1 Gen2 (parrot), GammaOS Next Android 14 GSI reference device.",
+    "checkStickDrift": false,
+    "sampleHaptics": false,
+    "capturePerfetto": false,
+    "perfettoDurationSec": 15,
+    "captureStorageSpeed": false,
+    "captureWifiThroughput": false
+  }
+]

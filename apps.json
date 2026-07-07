@@ -1,0 +1,58 @@
+[
+  {
+    "name": "3DMark",
+    "package": "com.futuremark.dmandroid.application",
+    "type": "benchmark",
+    "durationSec": 180,
+    "monkeyEnabled": true,
+    "monkeyPctTouch": 70,
+    "monkeyPctMotion": 20,
+    "capturePerfetto": false,
+    "perfettoDurationSec": 15,
+    "captureStorageSpeed": false,
+    "captureWifiThroughput": false,
+    "notes": "Manual: user should tap through to Wild Life Extreme or Solar Bay; monkey only adds supplemental input/load variation and does not guarantee an official score run."
+  },
+  {
+    "name": "Geekbench 6",
+    "package": "com.primatelabs.geekbench6",
+    "type": "benchmark",
+    "durationSec": 180,
+    "monkeyEnabled": true,
+    "monkeyPctTouch": 70,
+    "monkeyPctMotion": 20,
+    "capturePerfetto": false,
+    "perfettoDurationSec": 15,
+    "captureStorageSpeed": false,
+    "captureWifiThroughput": false,
+    "notes": "Manual: use -SkipMonkey when you want the official CPU/GPU benchmark flow and score capture."
+  },
+  {
+    "name": "PPSSPP",
+    "package": "org.ppsspp.ppsspp",
+    "type": "game",
+    "durationSec": 120,
+    "monkeyEnabled": true,
+    "monkeyPctTouch": 70,
+    "monkeyPctMotion": 20,
+    "capturePerfetto": false,
+    "perfettoDurationSec": 15,
+    "captureStorageSpeed": false,
+    "captureWifiThroughput": false,
+    "notes": "Meaningful sustained load still depends on a game already loaded; monkey only interacts within PPSSPP's UI/components."
+  },
+  {
+    "name": "RetroArch",
+    "package": "com.retroarch.aarch64",
+    "type": "game",
+    "durationSec": 120,
+    "monkeyEnabled": true,
+    "monkeyPctTouch": 70,
+    "monkeyPctMotion": 20,
+    "capturePerfetto": false,
+    "perfettoDurationSec": 15,
+    "captureStorageSpeed": false,
+    "captureWifiThroughput": false,
+    "notes": "Meaningful sustained load still depends on a core/content already active; monkey is primarily for unattended UI activity and supplementary stress."
+  }
+]
