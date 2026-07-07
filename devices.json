@@ -9,5 +9,16 @@
     "perfettoDurationSec": 15,
     "captureStorageSpeed": false,
     "captureWifiThroughput": false
+  },
+  {
+    "name": "RG476H",
+    "adbSerial": "RG476H02701399",
+    "notes": "Anbernic RG476H, Unisoc ums9620 (ums9620_2h10), GammaOS Lite Android 14. GPU via devfreq (23140000.gpu), fan via hwmon0 pwm-fan (pwm1 duty cycle, no RPM reporting).",
+    "checkStickDrift": false,
+    "sampleHaptics": false,
+    "capturePerfetto": false,
+    "perfettoDurationSec": 15,
+    "captureStorageSpeed": false,
+    "captureWifiThroughput": false
   }
 ]

@@ -29,15 +29,44 @@ elif [ -f /sys/class/misc/mali0/device/utilization ]; then
 elif [ -f /sys/kernel/gpu/gpu_busy ]; then
   GPU_BUSY=/sys/kernel/gpu/gpu_busy
   GPU_FREQ=/sys/kernel/gpu/gpu_clock
+else
+  # Generic devfreq fallback (Unisoc/MediaTek/other non-Adreno, non-Mali-legacy
+  # SoCs commonly expose GPU clock scaling here; node name varies by SoC, e.g.
+  # "23140000.gpu" on Unisoc ums9620, so search by device name suffix rather
+  # than hardcoding the address prefix). No generic busy% file is exposed by
+  # this framework, only clock - so GPU_BUSY stays empty on this fallback path.
+  for d in /sys/class/devfreq/*.gpu /sys/class/devfreq/*gpu*; do
+    if [ -f "$d/cur_freq" ]; then
+      GPU_FREQ="$d/cur_freq"
+      break
+    fi
+  done
 fi
 
 FAN_SPEED=""
-for f in /sys/class/gpio5_pwm2/speed /sys/class/hwmon/hwmon0/fan1_input /sys/class/hwmon/hwmon1/fan1_input /sys/devices/platform/fan/fan_speed; do
+FAN_IS_PWM_DUTY=0
+for f in /sys/class/gpio5_pwm2/speed /sys/devices/platform/fan/fan_speed; do
   if [ -f "$f" ]; then
     FAN_SPEED="$f"
     break
   fi
 done
+if [ -z "$FAN_SPEED" ]; then
+  # Search all hwmon instances (index varies by device) for either an RPM
+  # report (fan1_input) or a PWM duty-cycle value (pwm1 - common on Unisoc
+  # "pwm-fan" driver, which does not report RPM, only commanded duty 0-255).
+  for h in /sys/class/hwmon/hwmon*; do
+    [ -d "$h" ] || continue
+    if [ -f "$h/fan1_input" ]; then
+      FAN_SPEED="$h/fan1_input"
+      break
+    elif [ -f "$h/pwm1" ]; then
+      FAN_SPEED="$h/pwm1"
+      FAN_IS_PWM_DUTY=1
+      break
+    fi
+  done
+fi
 
 BATT_TEMP=/sys/class/power_supply/battery/temp
 BATT_CURR=/sys/class/power_supply/battery/current_now
@@ -68,7 +97,15 @@ for cpu in $CPU_STAT_CORES; do
 done
 [ -n "$GPU_BUSY" ] && header="$header,gpu_busy_pct"
 [ -n "$GPU_FREQ" ] && header="$header,gpu_freq_hz"
-[ -n "$FAN_SPEED" ] && header="$header,fan_speed"
+if [ -n "$FAN_SPEED" ]; then
+  if [ "$FAN_IS_PWM_DUTY" = "1" ]; then
+    # PWM duty cycle (commanded fan power level, typically 0-255), not RPM -
+    # column name reflects this so reports don't misreport it as a speed unit.
+    header="$header,fan_pwm_duty"
+  else
+    header="$header,fan_speed_rpm"
+  fi
+fi
 [ -n "$BATT_TEMP" ] && header="$header,batt_temp_c"
 [ -n "$BATT_CURR" ] && header="$header,batt_current_ua"
 [ -n "$BATT_LEVEL" ] && header="$header,batt_level_pct"
