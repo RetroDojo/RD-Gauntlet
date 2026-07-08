@@ -89,6 +89,24 @@ function Normalize-AppsMetadata {
     return $normalized
 }
 
+function Get-CsvHeaderFromSiblingTelemetry {
+    # cooldown.csv is written by the same telemetry-monitor.sh header logic as telemetry.csv
+    # for a given app/device, so a sibling telemetry.csv in the same folder is a reliable
+    # source of the real column names when cooldown.csv itself is missing its header row
+    # (observed race: the remote monitor script's header write occasionally lost against a
+    # stale/overlapping process, leaving the CSV starting directly with a data row).
+    param([Parameter(Mandatory = $true)][string]$CsvPath)
+
+    $siblingTelemetry = Join-Path (Split-Path -Parent $CsvPath) 'telemetry.csv'
+    if ((Split-Path -Leaf $CsvPath) -ne 'telemetry.csv' -and (Test-Path -LiteralPath $siblingTelemetry)) {
+        $firstLine = Get-Content -LiteralPath $siblingTelemetry -TotalCount 1 -ErrorAction SilentlyContinue
+        if ($firstLine -and ($firstLine -match '^[a-zA-Z_]')) {
+            return @($firstLine -split ',' | ForEach-Object { $_.Trim('"') })
+        }
+    }
+    return $null
+}
+
 function Get-CsvMetricStats {
     param([Parameter(Mandatory = $true)][string]$CsvPath)
 
@@ -96,7 +114,25 @@ function Get-CsvMetricStats {
         return @()
     }
 
-    $rows = @(Import-Csv -LiteralPath $CsvPath)
+    $rows = $null
+    try {
+        $rows = @(Import-Csv -LiteralPath $CsvPath)
+    }
+    catch {
+        # Likely a headerless CSV (first line is a data row, not column names) -- this can
+        # produce duplicate/invalid member names that Import-Csv rejects outright. Recover by
+        # borrowing the header from a sibling telemetry.csv (same schema, same device/app),
+        # falling back to generic positional names if no sibling header is available.
+        $recoveredHeader = Get-CsvHeaderFromSiblingTelemetry -CsvPath $CsvPath
+        if (-not $recoveredHeader) {
+            $firstDataLine = Get-Content -LiteralPath $CsvPath -TotalCount 1 -ErrorAction SilentlyContinue
+            $fieldCount = if ($firstDataLine) { @($firstDataLine -split ',').Count } else { 0 }
+            $recoveredHeader = @(1..$fieldCount | ForEach-Object { "col_$_" })
+        }
+        Write-Warning ("Recovered headerless CSV using {0} columns: {1}" -f $recoveredHeader.Count, $CsvPath)
+        $rows = @(Import-Csv -LiteralPath $CsvPath -Header $recoveredHeader)
+    }
+
     if ($rows.Count -eq 0) {
         return @()
     }
