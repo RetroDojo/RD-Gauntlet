@@ -42,5 +42,55 @@
       ]
     },
     "notes": "N64 emulator - direct VIEW intent supported on this RG476H build."
+  },
+  {
+    "name": "PPSSPP",
+    "package": "org.ppsspp.ppsspp",
+    "type": "game",
+    "durationSec": 120,
+    "monkeyEnabled": true,
+    "monkeyPctTouch": 70,
+    "monkeyPctMotion": 20,
+    "launchIntent": {
+      "action": "android.intent.action.VIEW",
+      "dataUri": "file:///storage/emulated/0/ROMs/psp/BurnoutLegends.iso",
+      "component": "org.ppsspp.ppsspp/org.ppsspp.ppsspp.PpssppActivity"
+    },
+    "notes": "PSP emulator - direct VIEW intent confirmed live on RG476H 2026-07-08: launched straight into gameplay, no monkey/manual nav needed. PpssppActivity officially supports ACTION_VIEW per upstream AndroidManifest."
+  },
+  {
+    "name": "RetroArch-PS1",
+    "package": "com.retroarch.aarch64",
+    "type": "game",
+    "durationSec": 120,
+    "monkeyEnabled": true,
+    "monkeyPctTouch": 70,
+    "monkeyPctMotion": 20,
+    "launchIntent": {
+      "component": "com.retroarch.aarch64/com.retroarch.browser.retroactivity.RetroActivityFuture",
+      "stringExtras": {
+        "ROM": "/storage/emulated/0/ROMs/psx/CrashBash.pbp",
+        "LIBRETRO": "/data/user/0/com.retroarch.aarch64/cores/pcsx_rearmed_libretro_android.so",
+        "CONFIGFILE": "/storage/emulated/0/Android/data/com.retroarch.aarch64/files/retroarch.cfg"
+      }
+    },
+    "notes": "PS1 via PCSX ReARMed libretro core -- confirmed live on RG476H 2026-07-08: core installed via Online Updater > Core Downloader, BIOS (scph5501.bin etc.) already present in RetroArch/system, direct-launch via ROM/LIBRETRO/CONFIGFILE extras reached real in-game title screen (Crash Bash). IMPORTANT: ROM path must be space-free -- Android's am start extras do not survive spaces reliably through adb shell quoting; use underscore/no-space filenames for any PS1 test ROM."
+  },
+  {
+    "name": "NetherSX2-PS2",
+    "package": "xyz.aethersx2.android",
+    "type": "game",
+    "durationSec": 120,
+    "monkeyEnabled": true,
+    "monkeyPctTouch": 70,
+    "monkeyPctMotion": 20,
+    "launchIntent": {
+      "action": "android.intent.action.MAIN",
+      "categories": [
+        "android.intent.category.LAUNCHER"
+      ],
+      "component": "xyz.aethersx2.android/xyz.aethersx2.android.MainActivity"
+    },
+    "notes": "PS2 standalone emulator (NetherSX2/AetherSX2 fork) -- confirmed live on RG476H 2026-07-08: installed NetherSX2-v2.2n-4248.apk, BIOS pushed to Android/data/xyz.aethersx2.android/files/bios/ and imported via in-app SAF picker, ROM pushed to .../files/games/ and auto-detected on relaunch (no manual directory scan needed). Tapping the game entry launched EmulationActivity and reached real PS2 BIOS boot (memory-card-format prompt), confirming the full core+BIOS+content chain works. LIMITATION: pm dump shows only a MAIN/LAUNCHER intent filter -- no ACTION_VIEW handler, so there is no scriptable direct-file-launch intent (same limitation as RetroArch). Full automation of a specific game requires either (a) only ever having one game in the library, or (b) a UI-tap sequence to select it from the game list after launch. Standalone preferred over RetroArch's bundled dolphin_libretro/flycast cores per user preference for PS2/GameCube/Wii."
   }
 ]

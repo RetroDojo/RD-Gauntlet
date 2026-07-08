@@ -39,7 +39,12 @@
     "perfettoDurationSec": 15,
     "captureStorageSpeed": false,
     "captureWifiThroughput": false,
-    "notes": "Meaningful sustained load still depends on a game already loaded; monkey only interacts within PPSSPP's UI/components."
+    "launchIntent": {
+      "action": "android.intent.action.VIEW",
+      "dataUri": "file:///storage/emulated/0/ROMs/psp/BurnoutLegends.iso",
+      "component": "org.ppsspp.ppsspp/org.ppsspp.ppsspp.PpssppActivity"
+    },
+    "notes": "Direct VIEW intent confirmed live on RG476H 2026-07-08 -- launches straight into real gameplay, no monkey/manual nav needed. Meaningful sustained load still benefits from monkey for in-game input variety."
   },
   {
     "name": "RetroArch",
@@ -53,6 +58,13 @@
     "perfettoDurationSec": 15,
     "captureStorageSpeed": false,
     "captureWifiThroughput": false,
-    "notes": "Meaningful sustained load still depends on a core/content already active; monkey is primarily for unattended UI activity and supplementary stress."
+    "launchIntent": {
+      "action": "android.intent.action.MAIN",
+      "component": "com.retroarch.aarch64/com.retroarch.browser.mainmenu.MainMenuActivity",
+      "categories": [
+        "android.intent.category.LAUNCHER"
+      ]
+    },
+    "notes": "Launcher-only direct intent confirmed live on RG476H 2026-07-08 (reduces monkey randomness at app start). Direct content-open (auto-loading a specific ROM) is NOT wired here -- RetroArch's manifest exposes no ACTION_VIEW handler on this build, so opening a specific game still requires monkey/manual in-app navigation after launch."
   }
 ]

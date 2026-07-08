@@ -7,6 +7,11 @@
     "monkeyEnabled": true,
     "monkeyPctTouch": 70,
     "monkeyPctMotion": 20,
-    "notes": "RG476H second-workload cross-device data point."
+    "launchIntent": {
+      "action": "android.intent.action.VIEW",
+      "dataUri": "file:///storage/emulated/0/ROMs/psp/BurnoutLegends.iso",
+      "component": "org.ppsspp.ppsspp/org.ppsspp.ppsspp.PpssppActivity"
+    },
+    "notes": "RG476H second-workload cross-device data point. Direct VIEW intent confirmed live 2026-07-08 -- launches straight into gameplay, no monkey/manual nav needed."
   }
 ]
