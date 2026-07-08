@@ -1,0 +1,132 @@
+[
+  {
+    "id": "atari-2600",
+    "name": "Atari 2600",
+    "shortName": "2600",
+    "nativeModes": [
+      { "label": "Common NTSC gameplay frame", "width": 160, "height": 192 }
+    ],
+    "notes": "TIA output is not a single fixed framebuffer; 160x192 is a common reference for scaling calculators."
+  },
+  {
+    "id": "atari-7800",
+    "name": "Atari 7800",
+    "shortName": "7800",
+    "nativeModes": [
+      { "label": "Mode A", "width": 160, "height": 240 },
+      { "label": "Mode B", "width": 320, "height": 240 }
+    ],
+    "notes": "Two commonly cited rendering modes; game-dependent."
+  },
+  {
+    "id": "nes",
+    "name": "Nintendo Entertainment System (NES)",
+    "shortName": "NES",
+    "nativeModes": [{ "label": "Default", "width": 256, "height": 240 }],
+    "notes": "NTSC baseline reference."
+  },
+  {
+    "id": "snes",
+    "name": "Super Nintendo (SNES)",
+    "shortName": "SNES",
+    "nativeModes": [{ "label": "Common gameplay mode", "width": 256, "height": 224 }],
+    "notes": "Many games also use 256x239 and other modes."
+  },
+  {
+    "id": "genesis",
+    "name": "Sega Genesis / Mega Drive",
+    "shortName": "Genesis",
+    "nativeModes": [{ "label": "Common gameplay mode", "width": 320, "height": 224 }],
+    "notes": "Some games use 256-wide modes."
+  },
+  {
+    "id": "game-boy",
+    "name": "Game Boy / Game Boy Color",
+    "shortName": "GB/GBC",
+    "nativeModes": [{ "label": "Native", "width": 160, "height": 144 }],
+    "notes": "Shared logical resolution across DMG/GBC."
+  },
+  {
+    "id": "gba",
+    "name": "Game Boy Advance",
+    "shortName": "GBA",
+    "nativeModes": [{ "label": "Native", "width": 240, "height": 160 }],
+    "notes": "3:2 native handheld aspect."
+  },
+  {
+    "id": "nds",
+    "name": "Nintendo DS",
+    "shortName": "NDS",
+    "nativeModes": [{ "label": "Per screen", "width": 256, "height": 192 }],
+    "notes": "Each DS screen is 256x192; dual-screen layout depends on emulator presentation."
+  },
+  {
+    "id": "psp",
+    "name": "PlayStation Portable (PSP)",
+    "shortName": "PSP",
+    "nativeModes": [{ "label": "Native", "width": 480, "height": 272 }],
+    "notes": "16:9 native handheld output."
+  },
+  {
+    "id": "ps1",
+    "name": "PlayStation (PS1)",
+    "shortName": "PS1",
+    "nativeModes": [{ "label": "Common 3D baseline", "width": 320, "height": 240 }],
+    "notes": "PS1 is variable-resolution by game/mode; 320x240 is a common reference."
+  },
+  {
+    "id": "n64",
+    "name": "Nintendo 64",
+    "shortName": "N64",
+    "nativeModes": [{ "label": "Common gameplay baseline", "width": 320, "height": 240 }],
+    "notes": "Real output varies by title and VI settings."
+  },
+  {
+    "id": "dreamcast",
+    "name": "Sega Dreamcast",
+    "shortName": "Dreamcast",
+    "nativeModes": [{ "label": "VGA baseline", "width": 640, "height": 480 }],
+    "notes": "480p VGA baseline commonly used for modern scaling references."
+  },
+  {
+    "id": "neo-geo",
+    "name": "Neo Geo AES/MVS",
+    "shortName": "Neo Geo",
+    "nativeModes": [{ "label": "Common active area", "width": 320, "height": 224 }],
+    "notes": "Arcade timing/overscan conventions vary."
+  },
+  {
+    "id": "pc-engine",
+    "name": "PC Engine / TurboGrafx-16",
+    "shortName": "PCE/TG16",
+    "nativeModes": [{ "label": "Common active area", "width": 256, "height": 239 }],
+    "notes": "Multiple horizontal modes exist; this is a common reference."
+  },
+  {
+    "id": "saturn",
+    "name": "Sega Saturn",
+    "shortName": "Saturn",
+    "nativeModes": [
+      { "label": "Mode A", "width": 320, "height": 224 },
+      { "label": "Mode B", "width": 352, "height": 240 }
+    ],
+    "notes": "Saturn uses many internal video modes depending on game/scene."
+  },
+  {
+    "id": "gamecube",
+    "name": "Nintendo GameCube",
+    "shortName": "GameCube",
+    "nativeModes": [{ "label": "Common baseline", "width": 640, "height": 480 }],
+    "notes": "Many titles target 480i/480p output."
+  },
+  {
+    "id": "wii",
+    "name": "Nintendo Wii",
+    "shortName": "Wii",
+    "nativeModes": [
+      { "label": "4:3 mode", "width": 640, "height": 480 },
+      { "label": "16:9 anamorphic mode", "width": 854, "height": 480 }
+    ],
+    "notes": "Wii widescreen is commonly represented as 854x480 equivalent for square-pixel planning."
+  }
+]

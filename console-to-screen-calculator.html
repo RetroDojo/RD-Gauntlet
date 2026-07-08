@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Console-to-Screen Scaling Calculator</title>
+  <style>
+    :root {
+      --bg: #0f1220;
+      --panel: #171b2e;
+      --panel2: #1f2640;
+      --text: #e9ecff;
+      --muted: #9aa4d1;
+      --accent: #66d9ef;
+      --ok: #7dffa5;
+      --warn: #ffd166;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg, #0b0e1a 0%, #121730 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid #2c345a;
+      border-radius: 12px;
+      padding: 14px;
+    }
+    h1 { font-size: 20px; margin: 0 0 10px; }
+    h2 { font-size: 15px; margin: 0 0 8px; color: var(--accent); }
+    p { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
+    label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
+    select {
+      width: 100%;
+      background: var(--panel2);
+      color: var(--text);
+      border: 1px solid #34406f;
+      border-radius: 8px;
+      padding: 8px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(150px, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .stat {
+      background: #12182f;
+      border: 1px solid #2a3563;
+      border-radius: 8px;
+      padding: 8px;
+    }
+    .k { color: var(--muted); font-size: 11px; }
+    .v { font-size: 14px; font-weight: 600; margin-top: 3px; }
+    .big {
+      background: var(--panel);
+      border: 1px solid #2c345a;
+      border-radius: 12px;
+      padding: 14px;
+      min-height: 460px;
+    }
+    .viz-wrap {
+      background: #0d1226;
+      border: 1px solid #2a3563;
+      border-radius: 10px;
+      padding: 10px;
+      margin-top: 8px;
+    }
+    svg { width: 100%; height: 350px; display: block; }
+    .legend { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .warn { color: var(--warn); }
+    .ok { color: var(--ok); }
+    .notes {
+      margin-top: 10px;
+      background: #111735;
+      border: 1px solid #2a3563;
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      white-space: pre-wrap;
+    }
+    @media (max-width: 940px) {
+      .wrap { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="card">
+      <h1>Console-to-Screen Scaling Calculator</h1>
+      <p>Original math-based planner for integer scaling, bars, and stretch distortion.</p>
+
+      <label for="consoleSelect">Console/System</label>
+      <select id="consoleSelect"></select>
+
+      <label for="modeSelect">Resolution mode</label>
+      <select id="modeSelect"></select>
+
+      <label for="deviceSelect">Handheld device</label>
+      <select id="deviceSelect"></select>
+
+      <div class="notes" id="dataStatus"></div>
+    </section>
+
+    <section class="big">
+      <h2>Scaling Output</h2>
+      <div class="grid" id="stats"></div>
+      <div class="viz-wrap">
+        <svg id="viz" viewBox="0 0 620 360" aria-label="Scaling visualizer"></svg>
+        <div class="legend">Outer frame = device panel. Inner bright frame = integer-scaled console content. Dark margins represent letterbox/pillarbox.</div>
+      </div>
+      <div class="notes" id="explain"></div>
+    </section>
+  </div>
+
+  <script>
+    const embeddedDeviceJson = `[
+  {
+    "id": "rg-rotate",
+    "name": "RG Rotate",
+    "panelWidth": 720,
+    "panelHeight": 720,
+    "diagonalInches": 3.5,
+    "specSource": "https://anbernic.com/products/rg-rotate | https://retrocatalog.com/retro-handhelds/anbernic-rg-rotate",
+    "sourceType": "official + catalog",
+    "notes": "Official Anbernic listing confirms 3.5-inch 720x720 panel.",
+    "verification": "verified"
+  },
+  {
+    "id": "rg-ds",
+    "name": "RG DS",
+    "panelWidth": 640,
+    "panelHeight": 480,
+    "diagonalInches": 4.0,
+    "panelCount": 2,
+    "specSource": "https://anbernic.com/products/rgds | https://retrocatalog.com/retro-handhelds/anbernic-rg-ds",
+    "sourceType": "official + catalog",
+    "notes": "Dual-screen handheld; calculator models one 640x480 screen at a time. Official listing confirms dual 4.0-inch 640x480 IPS panels.",
+    "verification": "verified"
+  },
+  {
+    "id": "ayaneo-b-duck-air-mini",
+    "name": "Ayaneo B-Duck Air Mini",
+    "panelWidth": 1280,
+    "panelHeight": 960,
+    "diagonalInches": 4.2,
+    "specSource": "https://www.ayaneo.com/article/897 | https://retrocatalog.com/retro-handhelds/ayaneo-pocket-air-mini | https://www.notebookcheck.net/Ayaneo-officially-unveils-Pocket-Air-Mini-x-B-Duck-Limited-Edition-with-MTK-G90T-Hall-controls-and-4-2-inch-4-3-display.1244774.0.html",
+    "sourceType": "official + catalog + review",
+    "notes": "B.Duck special edition of Pocket Air Mini; cross-checked against AYANEO announcement and Notebookcheck coverage.",
+    "verification": "verified"
+  },
+  {
+    "id": "ayn-portal-2-base",
+    "name": "Ayn Portal 2 Base",
+    "panelWidth": 1920,
+    "panelHeight": 1080,
+    "diagonalInches": 7.0,
+    "specSource": "https://www.ayntec.com/products/odin2-portal | https://retrocatalog.com/retro-handhelds/odin-2-portal",
+    "sourceType": "official + catalog",
+    "notes": "Inventory alias normalized to Odin 2 Portal Base naming.",
+    "verification": "verified"
+  },
+  {
+    "id": "trimui-smartpros",
+    "name": "TrimUI SmartProS",
+    "panelWidth": 1280,
+    "panelHeight": 720,
+    "diagonalInches": 4.96,
+    "specSource": "https://retrocatalog.com/retro-handhelds/trimui-smart-pro",
+    "sourceType": "catalog + store listing",
+    "notes": "Treated as TrimUI Smart Pro family panel spec.",
+    "verification": "verified"
+  },
+  {
+    "id": "gamesir-pocket-taco",
+    "name": "GameSir Pocket Taco",
+    "panelWidth": null,
+    "panelHeight": null,
+    "diagonalInches": null,
+    "specSource": "https://retrohandhelds.gg/gamesir-pocket-taco-review/",
+    "sourceType": "accessory review",
+    "notes": "Controller accessory; no built-in display panel. Kept for inventory completeness and excluded from scaling math.",
+    "verification": "verified",
+    "isScreenDevice": false
+  },
+  {
+    "id": "trimui-brick",
+    "name": "TrimUI Brick",
+    "panelWidth": 1024,
+    "panelHeight": 768,
+    "diagonalInches": 3.2,
+    "specSource": "https://retrohandhelds.gg/trimui-brick-review/",
+    "sourceType": "review + catalog",
+    "notes": "4:3 high-PPI IPS panel.",
+    "verification": "verified"
+  },
+  {
+    "id": "rg40xxv",
+    "name": "RG40XXV",
+    "panelWidth": 640,
+    "panelHeight": 480,
+    "diagonalInches": 4.0,
+    "specSource": "https://anbernic.com/en-gb/products/rg-40xxv",
+    "sourceType": "official",
+    "notes": "Official listing: 4.0-inch IPS, 640x480.",
+    "verification": "verified"
+  },
+  {
+    "id": "rpc6",
+    "name": "Retroid Pocket Classic 6-button (RPC6)",
+    "panelWidth": 1240,
+    "panelHeight": 1080,
+    "diagonalInches": 3.92,
+    "wmSizeMeasured": "1240x1080",
+    "specSource": "https://www.goretroid.com/products/retroid-pocket-classic",
+    "sourceType": "official + in-repo measurement",
+    "notes": "Uses measured wmSize from this repo results as requested.",
+    "verification": "verified"
+  },
+  {
+    "id": "retroid-pocket-flip-2",
+    "name": "Retroid Pocket Flip 2",
+    "panelWidth": 1920,
+    "panelHeight": 1080,
+    "diagonalInches": 5.5,
+    "specSource": "https://www.goretroid.com/products/retroid-pocket-flip-2",
+    "sourceType": "official",
+    "notes": "Official store spec.",
+    "verification": "verified"
+  },
+  {
+    "id": "steam-deck-led",
+    "name": "Steam Deck LED (LCD)",
+    "panelWidth": 1280,
+    "panelHeight": 800,
+    "diagonalInches": 7.0,
+    "specSource": "https://www.steamdeck.com/en/tech",
+    "sourceType": "official",
+    "notes": "Valve LCD model tech spec.",
+    "verification": "verified"
+  },
+  {
+    "id": "game-boy-pocket-1996",
+    "name": "Game Boy Pocket (1996 hardware)",
+    "panelWidth": 160,
+    "panelHeight": 144,
+    "diagonalInches": 2.6,
+    "specSource": "https://en.wikipedia.org/wiki/Game_Boy_Pocket",
+    "sourceType": "historical reference",
+    "notes": "Reflective monochrome LCD; no backlight.",
+    "verification": "verified"
+  },
+  {
+    "id": "rg-cube-xx",
+    "name": "RG Cube XX",
+    "panelWidth": 720,
+    "panelHeight": 720,
+    "diagonalInches": 3.95,
+    "specSource": "https://anbernic.com/products/rg-cubexx",
+    "sourceType": "official",
+    "notes": "Official listing: 3.95-inch 1:1 display.",
+    "verification": "verified"
+  },
+  {
+    "id": "rg353v",
+    "name": "RG353V",
+    "panelWidth": 640,
+    "panelHeight": 480,
+    "diagonalInches": 3.5,
+    "specSource": "https://anbernic.com/products/rg353v-rg353vs",
+    "sourceType": "official",
+    "notes": "Official listing: 3.5-inch 640x480 IPS.",
+    "verification": "verified"
+  },
+  {
+    "id": "rg34xxsp",
+    "name": "RG34XXSP",
+    "panelWidth": 720,
+    "panelHeight": 480,
+    "diagonalInches": 3.4,
+    "specSource": "https://anbernic.com/products/rg34xxsp | https://retrocatalog.com/retro-handhelds/rg-34xxsp",
+    "sourceType": "official + catalog",
+    "notes": "Inventory label \"34XXSP\" normalized to RG34XXSP. Official Anbernic listing confirms 3.4-inch 720x480 panel.",
+    "verification": "verified"
+  },
+  {
+    "id": "mangmi-air-x",
+    "name": "Mangmi Air X",
+    "panelWidth": 1920,
+    "panelHeight": 1080,
+    "diagonalInches": 5.5,
+    "specSource": "https://retrocatalog.com/retro-handhelds/mangmi-air-x | https://retrospecgame.com/en/device/mangmi-air-x",
+    "sourceType": "catalog + review",
+    "notes": "No trusted first-party manufacturer spec page found in this pass; values cross-checked across aggregator/review sources.",
+    "verification": "unverified - needs confirmation"
+  },
+  {
+    "id": "rg35xxsp",
+    "name": "RG35XXSP",
+    "panelWidth": 640,
+    "panelHeight": 480,
+    "diagonalInches": 3.5,
+    "specSource": "https://retrospecgame.com/en/device/anbernic-rg35xx-sp",
+    "sourceType": "retail/spec guide",
+    "notes": "Commonly documented as 3.5-inch 640x480 IPS.",
+    "verification": "verified"
+  },
+  {
+    "id": "batlexp-g350",
+    "name": "BattleXP G350",
+    "panelWidth": 640,
+    "panelHeight": 480,
+    "diagonalInches": 3.5,
+    "specSource": "https://retrocatalog.com/retro-handhelds/batlexp-g350 | https://retrohandhelds.gg/batlexp-g350-setup-guide/",
+    "sourceType": "catalog + review",
+    "notes": "Brand has limited first-party documentation; panel values match across catalog and setup/review coverage.",
+    "verification": "verified"
+  },
+  {
+    "id": "r36-ultra",
+    "name": "R36 Ultra",
+    "panelWidth": 720,
+    "panelHeight": 720,
+    "diagonalInches": 4.0,
+    "specSource": "https://www.amazon.com/Handheld-Console-Display-Supports-Emulators/dp/B0G4VSC767 | https://cartup.com/product/r36_ultra_handheld_game_console_64gb_20000_games_4_ips_wifi_bluetooth",
+    "sourceType": "retailer consensus (no reliable first-party page found)",
+    "notes": "Retail listings consistently cite 4.0-inch 720x720 IPS, but this remains unverified without trustworthy manufacturer docs.",
+    "verification": "unverified - needs confirmation"
+  },
+  {
+    "id": "rg-vita-pro",
+    "name": "RG Vita Pro",
+    "panelWidth": 1920,
+    "panelHeight": 1080,
+    "diagonalInches": 5.5,
+    "specSource": "https://anbernic.com/products/rgvita-rgvita-pro | https://retrocatalog.com/retro-handhelds/anbernic-rg-vita-pro",
+    "sourceType": "official + catalog",
+    "notes": "Official Anbernic listing + catalog corroboration.",
+    "verification": "verified"
+  },
+  {
+    "id": "psp-1000",
+    "name": "PSP-1000 (original Sony hardware)",
+    "panelWidth": 480,
+    "panelHeight": 272,
+    "diagonalInches": 4.3,
+    "specSource": "https://en.wikipedia.org/wiki/PlayStation_Portable",
+    "sourceType": "historical reference",
+    "notes": "Original PSP model family baseline panel spec.",
+    "verification": "verified"
+  },
+  {
+    "id": "rg476h",
+    "name": "RG476H",
+    "panelWidth": 1280,
+    "panelHeight": 960,
+    "diagonalInches": 4.7,
+    "wmSizeMeasured": "1280x960",
+    "specSource": "In-repo measured wmSize + https://anbernic.com/products/rg476h",
+    "sourceType": "measured + official",
+    "notes": "Uses measured wmSize from this repo as authoritative per request.",
+    "verification": "verified"
+  }
+]
+`;
+    const embeddedConsoleJson = `[
+  {
+    "id": "atari-2600",
+    "name": "Atari 2600",
+    "shortName": "2600",
+    "nativeModes": [
+      { "label": "Common NTSC gameplay frame", "width": 160, "height": 192 }
+    ],
+    "notes": "TIA output is not a single fixed framebuffer; 160x192 is a common reference for scaling calculators."
+  },
+  {
+    "id": "atari-7800",
+    "name": "Atari 7800",
+    "shortName": "7800",
+    "nativeModes": [
+      { "label": "Mode A", "width": 160, "height": 240 },
+      { "label": "Mode B", "width": 320, "height": 240 }
+    ],
+    "notes": "Two commonly cited rendering modes; game-dependent."
+  },
+  {
+    "id": "nes",
+    "name": "Nintendo Entertainment System (NES)",
+    "shortName": "NES",
+    "nativeModes": [{ "label": "Default", "width": 256, "height": 240 }],
+    "notes": "NTSC baseline reference."
+  },
+  {
+    "id": "snes",
+    "name": "Super Nintendo (SNES)",
+    "shortName": "SNES",
+    "nativeModes": [{ "label": "Common gameplay mode", "width": 256, "height": 224 }],
+    "notes": "Many games also use 256x239 and other modes."
+  },
+  {
+    "id": "genesis",
+    "name": "Sega Genesis / Mega Drive",
+    "shortName": "Genesis",
+    "nativeModes": [{ "label": "Common gameplay mode", "width": 320, "height": 224 }],
+    "notes": "Some games use 256-wide modes."
+  },
+  {
+    "id": "game-boy",
+    "name": "Game Boy / Game Boy Color",
+    "shortName": "GB/GBC",
+    "nativeModes": [{ "label": "Native", "width": 160, "height": 144 }],
+    "notes": "Shared logical resolution across DMG/GBC."
+  },
+  {
+    "id": "gba",
+    "name": "Game Boy Advance",
+    "shortName": "GBA",
+    "nativeModes": [{ "label": "Native", "width": 240, "height": 160 }],
+    "notes": "3:2 native handheld aspect."
+  },
+  {
+    "id": "nds",
+    "name": "Nintendo DS",
+    "shortName": "NDS",
+    "nativeModes": [{ "label": "Per screen", "width": 256, "height": 192 }],
+    "notes": "Each DS screen is 256x192; dual-screen layout depends on emulator presentation."
+  },
+  {
+    "id": "psp",
+    "name": "PlayStation Portable (PSP)",
+    "shortName": "PSP",
+    "nativeModes": [{ "label": "Native", "width": 480, "height": 272 }],
+    "notes": "16:9 native handheld output."
+  },
+  {
+    "id": "ps1",
+    "name": "PlayStation (PS1)",
+    "shortName": "PS1",
+    "nativeModes": [{ "label": "Common 3D baseline", "width": 320, "height": 240 }],
+    "notes": "PS1 is variable-resolution by game/mode; 320x240 is a common reference."
+  },
+  {
+    "id": "n64",
+    "name": "Nintendo 64",
+    "shortName": "N64",
+    "nativeModes": [{ "label": "Common gameplay baseline", "width": 320, "height": 240 }],
+    "notes": "Real output varies by title and VI settings."
+  },
+  {
+    "id": "dreamcast",
+    "name": "Sega Dreamcast",
+    "shortName": "Dreamcast",
+    "nativeModes": [{ "label": "VGA baseline", "width": 640, "height": 480 }],
+    "notes": "480p VGA baseline commonly used for modern scaling references."
+  },
+  {
+    "id": "neo-geo",
+    "name": "Neo Geo AES/MVS",
+    "shortName": "Neo Geo",
+    "nativeModes": [{ "label": "Common active area", "width": 320, "height": 224 }],
+    "notes": "Arcade timing/overscan conventions vary."
+  },
+  {
+    "id": "pc-engine",
+    "name": "PC Engine / TurboGrafx-16",
+    "shortName": "PCE/TG16",
+    "nativeModes": [{ "label": "Common active area", "width": 256, "height": 239 }],
+    "notes": "Multiple horizontal modes exist; this is a common reference."
+  },
+  {
+    "id": "saturn",
+    "name": "Sega Saturn",
+    "shortName": "Saturn",
+    "nativeModes": [
+      { "label": "Mode A", "width": 320, "height": 224 },
+      { "label": "Mode B", "width": 352, "height": 240 }
+    ],
+    "notes": "Saturn uses many internal video modes depending on game/scene."
+  },
+  {
+    "id": "gamecube",
+    "name": "Nintendo GameCube",
+    "shortName": "GameCube",
+    "nativeModes": [{ "label": "Common baseline", "width": 640, "height": 480 }],
+    "notes": "Many titles target 480i/480p output."
+  },
+  {
+    "id": "wii",
+    "name": "Nintendo Wii",
+    "shortName": "Wii",
+    "nativeModes": [
+      { "label": "4:3 mode", "width": 640, "height": 480 },
+      { "label": "16:9 anamorphic mode", "width": 854, "height": 480 }
+    ],
+    "notes": "Wii widescreen is commonly represented as 854x480 equivalent for square-pixel planning."
+  }
+]
+`;
+    const fallbackDevices = JSON.parse(embeddedDeviceJson.replace(/^\uFEFF/, ''));
+    const fallbackConsoles = JSON.parse(embeddedConsoleJson.replace(/^\uFEFF/, ''));
+
+    const state = {
+      devices: [],
+      consoles: [],
+      selectedConsoleId: null,
+      selectedModeIndex: 0,
+      selectedDeviceId: null,
+      loadedFromFiles: false
+    };
+
+    function gcd(a, b) {
+      while (b !== 0) [a, b] = [b, a % b];
+      return a;
+    }
+
+    function ratioText(w, h) {
+      const g = gcd(w, h);
+      return `${w / g}:${h / g}`;
+    }
+
+    function ppi(w, h, d) {
+      return Math.sqrt(w * w + h * h) / d;
+    }
+
+    function calc(consoleMode, device) {
+      const sw = consoleMode.width;
+      const sh = consoleMode.height;
+      const dw = device.panelWidth;
+      const dh = device.panelHeight;
+
+      const integerScale = Math.max(0, Math.floor(Math.min(dw / sw, dh / sh)));
+      const intW = sw * integerScale;
+      const intH = sh * integerScale;
+      const barX = Math.max(0, (dw - intW) / 2);
+      const barY = Math.max(0, (dh - intH) / 2);
+
+      const fillScaleX = dw / sw;
+      const fillScaleY = dh / sh;
+      const uniformFitScale = Math.min(fillScaleX, fillScaleY);
+      const distortionPct = Math.abs((fillScaleX / fillScaleY) - 1) * 100;
+
+      return {
+        integerScale,
+        intW,
+        intH,
+        barX,
+        barY,
+        fillScaleX,
+        fillScaleY,
+        uniformFitScale,
+        distortionPct,
+        consoleAspect: sw / sh,
+        deviceAspect: dw / dh
+      };
+    }
+
+    function fmt(num, digits = 2) {
+      return Number.isFinite(num) ? num.toFixed(digits) : 'n/a';
+    }
+
+    function statsHtml(mode, device, out) {
+      const devicePpi = ppi(device.panelWidth, device.panelHeight, device.diagonalInches);
+      const bars = `L/R: ${fmt(out.barX, 1)} px, T/B: ${fmt(out.barY, 1)} px`;
+      const distortionClass = out.distortionPct > 2 ? 'warn' : 'ok';
+
+      return [
+        ['Console native', `${mode.width} x ${mode.height} (${ratioText(mode.width, mode.height)})`],
+        ['Device panel', `${device.panelWidth} x ${device.panelHeight} (${ratioText(device.panelWidth, device.panelHeight)})`],
+        ['Device diagonal', `${fmt(device.diagonalInches, 2)}\"`],
+        ['Device PPI', `${fmt(devicePpi, 2)} PPI`],
+        ['Largest integer scale', out.integerScale > 0 ? `${out.integerScale}x` : 'No 1x fit'],
+        ['Integer output area', `${out.intW} x ${out.intH}`],
+        ['Black-bar area', bars],
+        ['Uniform non-integer fit', `${fmt(out.uniformFitScale, 4)}x`],
+        ['Full-screen stretch', `X ${fmt(out.fillScaleX, 4)}x / Y ${fmt(out.fillScaleY, 4)}x`],
+        ['Stretch distortion', `<span class="${distortionClass}">${fmt(out.distortionPct, 2)}%</span>`]
+      ].map(([k, v]) => `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+    }
+
+    function drawViz(mode, device, out) {
+      const svg = document.getElementById('viz');
+      const pad = 24;
+      const stageW = 620 - pad * 2;
+      const stageH = 360 - pad * 2;
+      const scale = Math.min(stageW / device.panelWidth, stageH / device.panelHeight);
+      const devW = device.panelWidth * scale;
+      const devH = device.panelHeight * scale;
+      const devX = (620 - devW) / 2;
+      const devY = (360 - devH) / 2;
+
+      const intW = out.intW * scale;
+      const intH = out.intH * scale;
+      const intX = devX + (devW - intW) / 2;
+      const intY = devY + (devH - intH) / 2;
+
+      svg.innerHTML = `
+        <rect x="${devX}" y="${devY}" width="${devW}" height="${devH}" rx="8" fill="#0a0e1f" stroke="#7a8ad8" stroke-width="2" />
+        <rect x="${intX}" y="${intY}" width="${intW}" height="${intH}" rx="4" fill="#72f1b833" stroke="#7dffa5" stroke-width="2" />
+        <text x="${devX + 8}" y="${devY + 18}" fill="#9aa4d1" font-size="12">Device: ${device.panelWidth}x${device.panelHeight}</text>
+        <text x="${intX + 8}" y="${intY + 18}" fill="#d3ffe3" font-size="12">Integer content: ${out.intW}x${out.intH} (${out.integerScale}x)</text>
+      `;
+    }
+
+    function update() {
+      const consoleItem = state.consoles.find(c => c.id === state.selectedConsoleId);
+      const device = state.devices.find(d => d.id === state.selectedDeviceId);
+      const stats = document.getElementById('stats');
+      const explain = document.getElementById('explain');
+      if (!consoleItem || !device) return;
+
+      const mode = consoleItem.nativeModes[state.selectedModeIndex] || consoleItem.nativeModes[0];
+      const out = calc(mode, device);
+
+      stats.innerHTML = statsHtml(mode, device, out);
+      drawViz(mode, device, out);
+
+      explain.textContent = [
+        `Console notes: ${consoleItem.notes || 'n/a'}`,
+        `Device notes: ${device.notes || 'n/a'}`,
+        `Spec source: ${device.specSource || 'n/a'}`,
+        `Verification: ${device.verification || 'n/a'}`
+      ].join('\n');
+    }
+
+    function populateModeSelect() {
+      const sel = document.getElementById('modeSelect');
+      const consoleItem = state.consoles.find(c => c.id === state.selectedConsoleId);
+      sel.innerHTML = '';
+      if (!consoleItem) return;
+      consoleItem.nativeModes.forEach((m, i) => {
+        const o = document.createElement('option');
+        o.value = String(i);
+        o.textContent = `${m.label}: ${m.width}x${m.height}`;
+        sel.appendChild(o);
+      });
+      state.selectedModeIndex = 0;
+      sel.value = '0';
+    }
+
+    function populateSelects() {
+      const consoleSelect = document.getElementById('consoleSelect');
+      const deviceSelect = document.getElementById('deviceSelect');
+
+      consoleSelect.innerHTML = '';
+      state.consoles.forEach(c => {
+        const o = document.createElement('option');
+        o.value = c.id;
+        o.textContent = c.name;
+        consoleSelect.appendChild(o);
+      });
+
+      deviceSelect.innerHTML = '';
+      state.devices.forEach(d => {
+        const incomplete = !(Number.isFinite(d.panelWidth) && Number.isFinite(d.panelHeight) && Number.isFinite(d.diagonalInches));
+        const o = document.createElement('option');
+        o.value = d.id;
+        o.disabled = incomplete;
+        o.textContent = incomplete ? `${d.name} (spec incomplete)` : d.name;
+        deviceSelect.appendChild(o);
+      });
+
+      state.selectedConsoleId = state.consoles[0]?.id || null;
+      state.selectedDeviceId = state.devices.find(d => Number.isFinite(d.panelWidth) && Number.isFinite(d.panelHeight) && Number.isFinite(d.diagonalInches))?.id || null;
+      consoleSelect.value = state.selectedConsoleId || '';
+      deviceSelect.value = state.selectedDeviceId || '';
+
+      populateModeSelect();
+      update();
+    }
+
+    async function loadJson(path) {
+      const resp = await fetch(path, { cache: 'no-store' });
+      if (!resp.ok) throw new Error(`Could not load ${path}: ${resp.status}`);
+      return resp.json();
+    }
+
+    async function init() {
+      const status = document.getElementById('dataStatus');
+      try {
+        const [devices, consoles] = await Promise.all([
+          loadJson('./device-specs.json'),
+          loadJson('./console-specs.json')
+        ]);
+        state.devices = devices;
+        state.consoles = consoles;
+        state.loadedFromFiles = true;
+        status.textContent = `Loaded external JSON files. Devices: ${devices.length}, Consoles: ${consoles.length}.`;
+      } catch (err) {
+        state.devices = fallbackDevices;
+        state.consoles = fallbackConsoles;
+        state.loadedFromFiles = false;
+        status.textContent = `JSON fetch unavailable (common under file:// CORS). Using embedded fallback dataset.\n${err.message}`;
+      }
+
+      populateSelects();
+
+      document.getElementById('consoleSelect').addEventListener('change', (e) => {
+        state.selectedConsoleId = e.target.value;
+        populateModeSelect();
+        update();
+      });
+
+      document.getElementById('modeSelect').addEventListener('change', (e) => {
+        state.selectedModeIndex = Number(e.target.value) || 0;
+        update();
+      });
+
+      document.getElementById('deviceSelect').addEventListener('change', (e) => {
+        state.selectedDeviceId = e.target.value;
+        update();
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>
+
