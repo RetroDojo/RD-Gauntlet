@@ -13,6 +13,23 @@ if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction Sile
     $PSNativeCommandUseErrorActionPreference = $false
 }
 
+# Safety net: if the suite throws partway through (e.g. an app crashes, adb drops),
+# still attempt to restore the device to its pre-test brightness/volume/home-screen
+# state rather than leaving it muted/dimmed/stuck inside a benchmarked app.
+trap {
+    if ((Get-Variable -Name targetDevice -Scope Script -ErrorAction SilentlyContinue) -and
+        (Get-Variable -Name deviceRestorePoint -Scope Script -ErrorAction SilentlyContinue)) {
+        try {
+            Restore-DeviceDefaults -Serial $targetDevice.AdbSerial -RestorePoint $deviceRestorePoint
+        }
+        catch {
+            Write-Warning "Restore-DeviceDefaults failed during error cleanup: $($_.Exception.Message)"
+        }
+    }
+    # Intentionally no 'continue'/'break': let the error keep propagating and
+    # terminate the script normally after cleanup runs, same as if trap weren't here.
+}
+
 function Write-Utf8NoBomFile {
     param(
         [Parameter(Mandatory = $true)][string]$Path,
@@ -129,6 +146,45 @@ function Set-DeviceVolumeMuted {
     Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'cmd', 'media_session', 'volume', '--stream', '4', '--set', '1') -StepDescription 'mute stream 4 (alarm floor)' -AllowFailure | Out-Null
     for ($i = 0; $i -lt 30; $i++) {
         Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'input', 'keyevent', '25') -StepDescription 'lower music volume' -AllowFailure | Out-Null
+    }
+}
+
+function Get-DeviceRestorePoint {
+    param([Parameter(Mandatory = $true)][string]$Serial)
+    # Captures a few Settings-provider values we intentionally change for testing
+    # (brightness/auto-brightness, volume) so they can be restored afterwards.
+    # This is a settings-only snapshot - no partition/vendor state is touched.
+    $brightness = (Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'settings', 'get', 'system', 'screen_brightness') -StepDescription 'read brightness' -AllowFailure).Output.Trim()
+    $brightnessMode = (Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'settings', 'get', 'system', 'screen_brightness_mode') -StepDescription 'read brightness mode' -AllowFailure).Output.Trim()
+    $musicVolume = (Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'cmd', 'media_session', 'volume', '--stream', '3', '--get') -StepDescription 'read music volume' -AllowFailure).Output
+    return [pscustomobject]@{
+        Brightness     = $brightness
+        BrightnessMode = $brightnessMode
+        MusicVolumeRaw = $musicVolume
+    }
+}
+
+function Restore-DeviceDefaults {
+    param(
+        [Parameter(Mandatory = $true)][string]$Serial,
+        [Parameter(Mandatory = $true)][pscustomobject]$RestorePoint
+    )
+    # Best-effort restore run at the end of every suite (even on failure, via finally)
+    # so a device is never left muted, dimmed, or sitting inside a benchmarked app.
+    Write-Status -Message 'Restoring device to pre-test state (home screen, brightness, volume)...'
+    Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'input', 'keyevent', 'KEYCODE_HOME') -StepDescription 'return to home' -AllowFailure | Out-Null
+    if ($RestorePoint.BrightnessMode -match '^\d+$') {
+        Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'settings', 'put', 'system', 'screen_brightness_mode', $RestorePoint.BrightnessMode) -StepDescription 'restore brightness mode' -AllowFailure | Out-Null
+    }
+    if ($RestorePoint.Brightness -match '^\d+$') {
+        Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'settings', 'put', 'system', 'screen_brightness', $RestorePoint.Brightness) -StepDescription 'restore brightness' -AllowFailure | Out-Null
+    }
+    $match = [regex]::Match($RestorePoint.MusicVolumeRaw, 'volume is (\d+) in range \[(\d+)\.\.(\d+)\]')
+    if ($match.Success) {
+        $priorIndex = [int]$match.Groups[1].Value
+        for ($i = 0; $i -lt $priorIndex; $i++) {
+            Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'input', 'keyevent', '24') -StepDescription 'restore music volume' -AllowFailure | Out-Null
+        }
     }
 }
 
@@ -739,6 +795,7 @@ if ($needPerfettoParser) {
 Write-Status -Message ("Using device '{0}' ({1})" -f $targetDevice.Name, $targetDevice.AdbSerial)
 Invoke-Adb -Arguments @('-s', $targetDevice.AdbSerial, 'shell', 'settings', 'put', 'system', 'screen_off_timeout', '1800000') -StepDescription 'Extending screen timeout' -AllowFailure | Out-Null
 Ensure-DeviceAwake -Serial $targetDevice.AdbSerial
+$deviceRestorePoint = Get-DeviceRestorePoint -Serial $targetDevice.AdbSerial
 if ($MuteAudio) {
     Write-Status -Message 'Muting device volume (audio is not evaluated by this suite)...'
     Set-DeviceVolumeMuted -Serial $targetDevice.AdbSerial
@@ -983,4 +1040,5 @@ foreach ($app in $apps) {
 
 Write-Status -Message 'Generating markdown report...'
 & $reportScriptPath -OutDir $resolvedOutDir
+Restore-DeviceDefaults -Serial $targetDevice.AdbSerial -RestorePoint $deviceRestorePoint
 Write-Status -Message ("Benchmark suite complete. Results: {0}" -f $resolvedOutDir)

@@ -157,7 +157,14 @@ Auto-detect the sole connected device:
 .\Invoke-BenchmarkSuite.ps1
 ```
 
-Use a custom apps config:
+The suite automatically mutes device volume before running (audio isn't evaluated by
+any test) and, at the end (or on failure, via a script-level `trap`), restores the
+device's original brightness/auto-brightness mode/volume and returns to the home
+screen. Pass `-MuteAudio $false` to skip muting if you need to hear the device during
+a run. This "restore defaults" step is best-effort (settings-only, no partition/vendor
+writes) — always visually confirm the device looks normal after a long unattended run.
+
+Use a custom apps config: 
 
 ```powershell
 .\Invoke-BenchmarkSuite.ps1 -DeviceName RPC6 -AppsConfig .\apps.json
