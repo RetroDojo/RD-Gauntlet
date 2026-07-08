@@ -157,11 +157,33 @@ function Get-DeviceRestorePoint {
     $brightness = (Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'settings', 'get', 'system', 'screen_brightness') -StepDescription 'read brightness' -AllowFailure).Output.Trim()
     $brightnessMode = (Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'settings', 'get', 'system', 'screen_brightness_mode') -StepDescription 'read brightness mode' -AllowFailure).Output.Trim()
     $musicVolume = (Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'cmd', 'media_session', 'volume', '--stream', '3', '--get') -StepDescription 'read music volume' -AllowFailure).Output
+    # GammaOS-branded devices (Anbernic/Retroid GammaOS Next/Lite builds) ship extra
+    # visual QS toggles (shader overlay, RGB LED sync, black-frame-insertion) that are
+    # ON by default. They add real GPU/CPU overhead (skewing benchmark telemetry) and
+    # BFI specifically causes visible flicker, especially at low brightness. These
+    # persist.* props are absent (empty string) on non-GammaOS devices, so this is a
+    # no-op there.
+    $gammaBfi = (Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'getprop', 'persist.gammaos.bfi.enable') -StepDescription 'read gamma bfi state' -AllowFailure).Output.Trim()
+    $gammaShader = (Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'getprop', 'persist.gammaos.shader.enable') -StepDescription 'read gamma shader state' -AllowFailure).Output.Trim()
+    $gammaRgb = (Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'getprop', 'persist.gammargb.control') -StepDescription 'read gamma rgb state' -AllowFailure).Output.Trim()
     return [pscustomobject]@{
         Brightness     = $brightness
         BrightnessMode = $brightnessMode
         MusicVolumeRaw = $musicVolume
+        GammaBfi       = $gammaBfi
+        GammaShader    = $gammaShader
+        GammaRgb       = $gammaRgb
     }
+}
+
+function Disable-GammaOsVisualExtras {
+    param([Parameter(Mandatory = $true)][string]$Serial)
+    # Best-effort; harmless no-op on devices without these props (getprop returns
+    # empty, setprop on a nonexistent GammaOS-specific prop is still accepted by
+    # Android's property system and simply has no effect since nothing reads it).
+    Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'setprop', 'persist.gammaos.bfi.enable', '0') -StepDescription 'disable GammaOS BFI' -AllowFailure | Out-Null
+    Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'setprop', 'persist.gammaos.shader.enable', '0') -StepDescription 'disable GammaOS shader' -AllowFailure | Out-Null
+    Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'setprop', 'persist.gammargb.control', 'off') -StepDescription 'disable GammaOS RGB' -AllowFailure | Out-Null
 }
 
 function Restore-DeviceDefaults {
@@ -185,6 +207,15 @@ function Restore-DeviceDefaults {
         for ($i = 0; $i -lt $priorIndex; $i++) {
             Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'input', 'keyevent', '24') -StepDescription 'restore music volume' -AllowFailure | Out-Null
         }
+    }
+    if ($RestorePoint.GammaBfi) {
+        Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'setprop', 'persist.gammaos.bfi.enable', $RestorePoint.GammaBfi) -StepDescription 'restore GammaOS BFI' -AllowFailure | Out-Null
+    }
+    if ($RestorePoint.GammaShader) {
+        Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'setprop', 'persist.gammaos.shader.enable', $RestorePoint.GammaShader) -StepDescription 'restore GammaOS shader' -AllowFailure | Out-Null
+    }
+    if ($RestorePoint.GammaRgb) {
+        Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'setprop', 'persist.gammargb.control', $RestorePoint.GammaRgb) -StepDescription 'restore GammaOS RGB' -AllowFailure | Out-Null
     }
 }
 
@@ -800,6 +831,8 @@ if ($MuteAudio) {
     Write-Status -Message 'Muting device volume (audio is not evaluated by this suite)...'
     Set-DeviceVolumeMuted -Serial $targetDevice.AdbSerial
 }
+Write-Status -Message 'Disabling GammaOS visual extras (shader/RGB/BFI) if present - they add GPU/CPU overhead and skew telemetry...'
+Disable-GammaOsVisualExtras -Serial $targetDevice.AdbSerial
 Ensure-TelemetryMonitor -Serial $targetDevice.AdbSerial -LocalScriptPath $telemetryLocalPath
 Ensure-RemoteScript -Serial $targetDevice.AdbSerial -LocalScriptPath $storageTestLocalPath -RemoteScriptPath '/data/local/tmp/storage-speed-test.sh'
 Ensure-RemoteScript -Serial $targetDevice.AdbSerial -LocalScriptPath $wifiTestLocalPath -RemoteScriptPath '/data/local/tmp/wifi-throughput-test.sh'
