@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Device Bench Dashboard</title>
+  <style>
+    body { font-family: Segoe UI, Arial, sans-serif; margin: 0; background: #f3f5f8; color: #222; }
+    header { background: #1f2b40; color: #fff; padding: 14px 16px; }
+    h1 { margin: 0; font-size: 20px; }
+    .container { padding: 16px; max-width: 1280px; margin: 0 auto; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .tab-btn { border: 1px solid #bec7d3; background: #fff; border-radius: 6px; padding: 8px 12px; cursor: pointer; }
+    .tab-btn.active { background: #2f4f7f; color: #fff; border-color: #2f4f7f; }
+    .tab { display: none; background: #fff; border: 1px solid #d9dee6; border-radius: 8px; padding: 14px; }
+    .tab.active { display: block; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+    label { font-size: 13px; display: block; margin-bottom: 4px; color: #334; }
+    select, input[type="text"], input[type="number"] { min-width: 260px; padding: 7px; border: 1px solid #c7cfdb; border-radius: 6px; }
+    button { border: 1px solid #2f4f7f; background: #2f4f7f; color: #fff; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+    button.secondary { background: #fff; color: #2f4f7f; }
+    table { border-collapse: collapse; width: 100%; font-size: 13px; }
+    th, td { border: 1px solid #dde3ec; padding: 6px; text-align: left; vertical-align: top; }
+    th { background: #f1f4f9; }
+    .badge { display: inline-block; border-radius: 999px; padding: 3px 8px; font-size: 12px; color: #fff; }
+    .s-queued { background: #7a7f87; } .s-running { background: #1f78d1; } .s-success { background: #1d9d5b; }
+    .s-failed { background: #d64545; } .s-cancelled { background: #9c5fcf; }
+    .small { font-size: 12px; color: #555; }
+    .log { white-space: pre-wrap; font-family: Consolas, monospace; background: #111; color: #d7f3d7; padding: 10px; border-radius: 6px; max-height: 320px; overflow: auto; }
+    .mono { font-family: Consolas, monospace; font-size: 12px; background: #f6f8fb; border: 1px solid #dce3ef; padding: 10px; white-space: pre-wrap; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .link-list { max-height: 240px; overflow: auto; border: 1px solid #dde3ec; border-radius: 6px; padding: 8px; background: #fafbfd; }
+    @media (max-width: 960px) { .grid2 { grid-template-columns: 1fr; } select, input[type="text"] { min-width: 100%; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Device Bench Dashboard</h1>
+  </header>
+  <div class="container">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="run">Run</button>
+      <button class="tab-btn" data-tab="jobs">Jobs</button>
+      <button class="tab-btn" data-tab="compare">Compare</button>
+      <button class="tab-btn" data-tab="tools">Tools</button>
+    </div>
+
+    <section id="tab-run" class="tab active">
+      <h2>Run a test</h2>
+      <div class="grid2">
+        <div>
+          <label for="deviceSelect">Device</label>
+          <select id="deviceSelect"></select>
+        </div>
+        <div>
+          <label for="appsConfigSelect">Apps config</label>
+          <select id="appsConfigSelect"></select>
+        </div>
+      </div>
+      <div class="row">
+        <label><input type="checkbox" id="skipMonkey"> Skip Monkey</label>
+        <label><input type="checkbox" id="muteAudio" checked> Mute audio during run</label>
+      </div>
+      <div class="row">
+        <label><input type="checkbox" id="captureStorageSpeed"> captureStorageSpeed</label>
+        <label><input type="checkbox" id="captureWifiThroughput"> captureWifiThroughput</label>
+        <label><input type="checkbox" id="capturePerfetto"> capturePerfetto</label>
+      </div>
+      <div class="row">
+        <label><input type="checkbox" id="checkStickDrift"> checkStickDrift (device override for this job)</label>
+        <label><input type="checkbox" id="sampleHaptics"> sampleHaptics (device override for this job)</label>
+      </div>
+      <div class="row">
+        <button id="launchBtn">Launch suite job</button>
+        <span id="launchMsg" class="small"></span>
+      </div>
+    </section>
+
+    <section id="tab-jobs" class="tab">
+      <h2>Jobs</h2>
+      <p class="small">Live polling every 3s while jobs are running.</p>
+      <table id="jobsTable">
+        <thead>
+          <tr>
+            <th>ID</th><th>Kind</th><th>Device</th><th>Config</th><th>Status</th><th>Elapsed</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="jobDetails" style="margin-top:12px;"></div>
+
+      <h3>Browse existing result reports</h3>
+      <div id="existingReports" class="link-list"></div>
+    </section>
+
+    <section id="tab-compare" class="tab">
+      <h2>Comparison charts</h2>
+      <p class="small">Runs New-ComparisonDataset.ps1 then New-ComparisonCharts.ps1.</p>
+      <div class="row">
+        <button id="runCompareBtn">Run comparison pipeline</button>
+        <span id="compareMsg" class="small"></span>
+      </div>
+      <p><a id="chartsLink" href="/files?path=results/comparison-charts/comparison-charts.html" target="_blank">Open comparison-charts.html</a></p>
+    </section>
+
+    <section id="tab-tools" class="tab">
+      <h2>Tools</h2>
+      <p><a href="/suite-file/console-to-screen-calculator.html" target="_blank">Open console-to-screen-calculator.html</a></p>
+      <h3>Compare two screenshots</h3>
+      <div class="row">
+        <div>
+          <label for="imageA">Image A (path under device-bench-suite)</label>
+          <input type="text" id="imageA" placeholder="results/.../00-launch.png">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="imageB">Image B (path under device-bench-suite)</label>
+          <input type="text" id="imageB" placeholder="results/.../00-launch.png">
+        </div>
+      </div>
+      <div class="row">
+        <button id="compareShotsBtn">Run Compare-Screenshots.py</button>
+      </div>
+      <div id="shotCompareOut" class="mono"></div>
+      <h4>Screenshot path suggestions</h4>
+      <div id="shotList" class="link-list"></div>
+    </section>
+  </div>
+
+  <script>
+    const state = { jobs: [], pollTimer: null };
+
+    function el(id){ return document.getElementById(id); }
+    function setTab(name){
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + name));
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+
+    function fmtElapsed(sec){ if(sec == null) return ''; const m=Math.floor(sec/60); const s=sec%60; return `${m}m ${s}s`; }
+    function badge(status){
+      const cls = `badge s-${status || 'queued'}`;
+      return `<span class="${cls}">${status}</span>`;
+    }
+
+    async function fetchJson(url, opts){
+      const r = await fetch(url, opts);
+      if(!r.ok){ throw new Error(await r.text()); }
+      return r.json();
+    }
+
+    async function loadRunData(){
+      const devices = await fetchJson('/api/devices');
+      const configs = await fetchJson('/api/apps-configs');
+      el('deviceSelect').innerHTML = devices.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+      el('appsConfigSelect').innerHTML = configs.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    async function launchJob(){
+      const body = {
+        deviceName: el('deviceSelect').value,
+        appsConfig: el('appsConfigSelect').value,
+        skipMonkey: el('skipMonkey').checked,
+        muteAudio: el('muteAudio').checked,
+        captureStorageSpeed: el('captureStorageSpeed').checked,
+        captureWifiThroughput: el('captureWifiThroughput').checked,
+        capturePerfetto: el('capturePerfetto').checked,
+        checkStickDrift: el('checkStickDrift').checked,
+        sampleHaptics: el('sampleHaptics').checked
+      };
+      try{
+        const resp = await fetchJson('/api/run', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+        el('launchMsg').textContent = `Launched job #${resp.jobId}`;
+        await loadJobs();
+      }catch(err){
+        el('launchMsg').textContent = 'Launch failed: ' + err.message;
+      }
+    }
+
+    function renderJobs(){
+      const tbody = el('jobsTable').querySelector('tbody');
+      tbody.innerHTML = state.jobs.map(j => {
+        const relOut = j.out_dir || '';
+        const reportPath = relOut ? `${relOut}/report.md` : '';
+        const actions = [
+          `<button class="secondary" onclick="showLog(${j.id})">Log tail</button>`,
+          j.status === 'running' ? `<button onclick="cancelJob(${j.id})">Cancel</button>` : '',
+          reportPath ? `<a href="/report?path=${encodeURIComponent(reportPath)}" target="_blank">report.md</a>` : '',
+          relOut ? `<a href="/browse?path=${encodeURIComponent(relOut)}" target="_blank">browse results</a>` : ''
+        ].filter(Boolean).join(' | ');
+        return `<tr>
+          <td>${j.id}</td><td>${j.kind || ''}</td><td>${j.device_name || ''}</td><td>${j.apps_config_path || ''}</td>
+          <td>${badge(j.status)}</td><td>${fmtElapsed(j.elapsed_sec)}</td><td>${actions}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    async function loadJobs(){
+      state.jobs = await fetchJson('/api/jobs');
+      renderJobs();
+      const anyRunning = state.jobs.some(j => j.status === 'running' || j.status === 'queued');
+      if(anyRunning && !state.pollTimer){
+        state.pollTimer = setInterval(loadJobs, 3000);
+      }
+      if(!anyRunning && state.pollTimer){
+        clearInterval(state.pollTimer); state.pollTimer = null;
+      }
+    }
+
+    async function showLog(id){
+      const log = await fetchJson(`/api/jobs/${id}/log?lines=200`);
+      el('jobDetails').innerHTML = `<h3>Job #${id} log tail</h3><div class="log">${(log.text || '').replace(/</g,'&lt;')}</div>`;
+    }
+
+    async function cancelJob(id){
+      try{ await fetchJson(`/api/jobs/${id}/cancel`, { method:'POST' }); await loadJobs(); }
+      catch(err){ alert('Cancel failed: ' + err.message); }
+    }
+    window.showLog = showLog;
+    window.cancelJob = cancelJob;
+
+    async function loadExistingReports(){
+      const items = await fetchJson('/api/existing-reports');
+      el('existingReports').innerHTML = items.map(i =>
+        `<div><a target="_blank" href="/report?path=${encodeURIComponent(i.report_path)}">${i.run_dir}</a> | <a target="_blank" href="/browse?path=${encodeURIComponent(i.run_dir)}">browse</a></div>`
+      ).join('') || '<div class="small">No report.md found under results/.</div>';
+    }
+
+    async function runComparison(){
+      try{
+        const r = await fetchJson('/api/run-comparison', {method:'POST'});
+        el('compareMsg').textContent = `Comparison job #${r.jobId} started.`;
+        await loadJobs();
+      }catch(err){
+        el('compareMsg').textContent = 'Failed: ' + err.message;
+      }
+    }
+
+    async function loadShotSuggestions(){
+      const shots = await fetchJson('/api/screenshot-files');
+      el('shotList').innerHTML = shots.map(s => `<div>${s}</div>`).join('');
+      if(shots[0] && !el('imageA').value) el('imageA').value = shots[0];
+      if(shots[1] && !el('imageB').value) el('imageB').value = shots[1];
+    }
+
+    async function compareShots(){
+      const body = { imageA: el('imageA').value, imageB: el('imageB').value };
+      try{
+        const r = await fetchJson('/api/tools/compare-screenshots', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+        el('shotCompareOut').textContent = `Command: ${r.command}\nExit: ${r.exitCode}\n\nSTDOUT:\n${r.stdout || ''}\n\nSTDERR:\n${r.stderr || ''}`;
+      }catch(err){
+        el('shotCompareOut').textContent = 'Failed: ' + err.message;
+      }
+    }
+
+    el('launchBtn').addEventListener('click', launchJob);
+    el('runCompareBtn').addEventListener('click', runComparison);
+    el('compareShotsBtn').addEventListener('click', compareShots);
+
+    (async function init(){
+      await loadRunData();
+      await loadJobs();
+      await loadExistingReports();
+      await loadShotSuggestions();
+    })().catch(err => alert(err.message));
+  </script>
+</body>
+</html>

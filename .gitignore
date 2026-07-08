@@ -1,3 +1,6 @@
 # Test-run artifacts (screenshots, CSVs, per-run reports) are ephemeral output,
 # not source — do not track them in git.
 results/
+dashboard/jobs.db
+dashboard/logs/
+dashboard/runtime/
