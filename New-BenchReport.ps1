@@ -116,7 +116,14 @@ function Get-CsvMetricStats {
         return @()
     }
 
-    $rows = @(Import-Csv -LiteralPath $CsvPath)
+    try {
+        $rows = @(Import-Csv -LiteralPath $CsvPath)
+    }
+    catch {
+        # Some captures can be headerless when device-side sampling is interrupted;
+        # skip stats instead of failing full report generation.
+        return @()
+    }
     if ($rows.Count -eq 0) {
         return @()
     }

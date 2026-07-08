@@ -1,0 +1,46 @@
+[
+  {
+    "name": "Flycast",
+    "package": "com.flycast.emulator",
+    "type": "game",
+    "durationSec": 120,
+    "monkeyEnabled": true,
+    "monkeyPctTouch": 70,
+    "monkeyPctMotion": 20,
+    "notes": "Dreamcast emulator - RG476H cross-emulator data point."
+  },
+  {
+    "name": "DraStic",
+    "package": "com.dsemu.drastic",
+    "type": "game",
+    "durationSec": 120,
+    "monkeyEnabled": true,
+    "monkeyPctTouch": 70,
+    "monkeyPctMotion": 20,
+    "launchIntent": {
+      "action": "android.intent.action.VIEW",
+      "dataUri": "file:///storage/emulated/0/ROMs/nds/NinjaGaidenDragonSword.zip",
+      "type": "*/*",
+      "component": "com.dsemu.drastic/.DraSticActivity"
+    },
+    "notes": "Nintendo DS emulator - direct VIEW intent supported on this RG476H build."
+  },
+  {
+    "name": "Mupen64PlusFZ",
+    "package": "org.mupen64plusae.v3.fzurita",
+    "type": "game",
+    "durationSec": 120,
+    "monkeyEnabled": true,
+    "monkeyPctTouch": 70,
+    "monkeyPctMotion": 20,
+    "launchIntent": {
+      "action": "android.intent.action.VIEW",
+      "dataUri": "file:///storage/emulated/0/ROMs/n64/PerfectDark.z64",
+      "component": "org.mupen64plusae.v3.fzurita/paulscode.android.mupen64plusae.SplashActivity",
+      "categories": [
+        "android.intent.category.BROWSABLE"
+      ]
+    },
+    "notes": "N64 emulator - direct VIEW intent supported on this RG476H build."
+  }
+]

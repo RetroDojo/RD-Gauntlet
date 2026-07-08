@@ -1,0 +1,36 @@
+[
+  {
+    "name": "DraStic",
+    "package": "com.dsemu.drastic",
+    "type": "game",
+    "durationSec": 35,
+    "monkeyEnabled": false,
+    "monkeyPctTouch": 70,
+    "monkeyPctMotion": 20,
+    "launchIntent": {
+      "action": "android.intent.action.VIEW",
+      "dataUri": "file:///storage/emulated/0/ROMs/nds/NinjaGaidenDragonSword.zip",
+      "type": "*/*",
+      "component": "com.dsemu.drastic/.DraSticActivity"
+    },
+    "notes": "Content-validated run using real NDS ROM path and pre-granted permissions."
+  },
+  {
+    "name": "Mupen64PlusFZ",
+    "package": "org.mupen64plusae.v3.fzurita",
+    "type": "game",
+    "durationSec": 20,
+    "monkeyEnabled": false,
+    "monkeyPctTouch": 70,
+    "monkeyPctMotion": 20,
+    "launchIntent": {
+      "action": "android.intent.action.VIEW",
+      "dataUri": "file:///storage/emulated/0/ROMs/n64/PerfectDark.z64",
+      "component": "org.mupen64plusae.v3.fzurita/paulscode.android.mupen64plusae.SplashActivity",
+      "categories": [
+        "android.intent.category.BROWSABLE"
+      ]
+    },
+    "notes": "Content-validated run using real N64 ROM path."
+  }
+]

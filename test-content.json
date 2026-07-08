@@ -1,0 +1,170 @@
+[
+  {
+    "name": "Kirby's Adventure",
+    "system": "nes",
+    "emulator": "RetroArch",
+    "romPath": "D:\\ROMS\\nes\\Kirby's Adventure (USA) (Rev 1).zip",
+    "devicePath": "/storage/emulated/0/ROMs/nes/KirbysAdventure.zip"
+  },
+  {
+    "name": "Battletoads",
+    "system": "nes",
+    "emulator": "RetroArch",
+    "romPath": "D:\\ROMS\\nes\\Battletoads (USA).zip",
+    "devicePath": "/storage/emulated/0/ROMs/nes/Battletoads.zip"
+  },
+  {
+    "name": "Mega Man 4",
+    "system": "nes",
+    "emulator": "RetroArch",
+    "romPath": "D:\\ROMS\\nes\\Mega Man 4 (USA) (Rev 1).zip",
+    "devicePath": "/storage/emulated/0/ROMs/nes/MegaMan4.zip"
+  },
+  {
+    "name": "Star Fox",
+    "system": "snes",
+    "emulator": "RetroArch",
+    "romPath": "D:\\ROMS\\snes\\Star Fox (USA) (Rev 2).zip",
+    "devicePath": "/storage/emulated/0/ROMs/snes/StarFox.zip"
+  },
+  {
+    "name": "Yoshi's Island",
+    "system": "snes",
+    "emulator": "RetroArch",
+    "romPath": "D:\\ROMS\\snes\\Super Mario World 2 - Yoshi's Island (USA) (Rev 1).zip",
+    "devicePath": "/storage/emulated/0/ROMs/snes/YoshisIsland.zip"
+  },
+  {
+    "name": "Killer Instinct",
+    "system": "snes",
+    "emulator": "RetroArch",
+    "romPath": "D:\\ROMS\\snes\\Killer Instinct (USA) (Rev 1).zip",
+    "devicePath": "/storage/emulated/0/ROMs/snes/KillerInstinct.zip"
+  },
+  {
+    "name": "Virtua Racing",
+    "system": "md",
+    "emulator": "RetroArch",
+    "romPath": "D:\\ROMS\\md\\Virtua Racing (USA).zip",
+    "devicePath": "/storage/emulated/0/ROMs/megadrive/VirtuaRacing.zip"
+  },
+  {
+    "name": "Sonic 3D Blast",
+    "system": "md",
+    "emulator": "RetroArch",
+    "romPath": "D:\\ROMS\\md\\Sonic 3D Blast (USA, Europe, Korea) (En).zip",
+    "devicePath": "/storage/emulated/0/ROMs/megadrive/Sonic3DBlast.zip"
+  },
+  {
+    "name": "Ultimate Mortal Kombat 3",
+    "system": "md",
+    "emulator": "RetroArch",
+    "romPath": "D:\\ROMS\\md\\Ultimate Mortal Kombat 3 (USA).zip",
+    "devicePath": "/storage/emulated/0/ROMs/megadrive/UMK3.zip"
+  },
+  {
+    "name": "Need for Speed Carbon",
+    "system": "gba",
+    "emulator": "RetroArch",
+    "romPath": "D:\\ROMS\\gba\\Need for Speed - Carbon - Own the City (USA, Europe) (En,Fr,De,Es,It).zip",
+    "devicePath": "/storage/emulated/0/ROMs/gba/NFSCarbon.zip"
+  },
+  {
+    "name": "V-Rally 3",
+    "system": "gba",
+    "emulator": "RetroArch",
+    "romPath": "D:\\ROMS\\gba\\V-Rally 3 (USA) (En,Fr,Es).zip",
+    "devicePath": "/storage/emulated/0/ROMs/gba/VRally3.zip"
+  },
+  {
+    "name": "Duke Nukem Advance",
+    "system": "gba",
+    "emulator": "RetroArch",
+    "romPath": "D:\\ROMS\\gba\\Duke Nukem Advance (USA).zip",
+    "devicePath": "/storage/emulated/0/ROMs/gba/DukeNukemAdvance.zip"
+  },
+  {
+    "name": "Street Fighter - The Movie",
+    "system": "arcade",
+    "emulator": "RetroArch (MAME2003-Plus)",
+    "romPath": "D:\\ROMS\\MAME2003PLUS\\sftm.zip",
+    "devicePath": "/storage/emulated/0/ROMs/mame/sftm.zip"
+  },
+  {
+    "name": "Guwange",
+    "system": "arcade",
+    "emulator": "RetroArch (MAME2003-Plus)",
+    "romPath": "D:\\ROMS\\MAME2003PLUS\\guwange.zip",
+    "devicePath": "/storage/emulated/0/ROMs/mame/guwange.zip"
+  },
+  {
+    "name": "Battle Bakraid",
+    "system": "arcade",
+    "emulator": "RetroArch (MAME2003-Plus)",
+    "romPath": "D:\\ROMS\\MAME2003PLUS\\bbakraid.zip",
+    "devicePath": "/storage/emulated/0/ROMs/mame/bbakraid.zip"
+  },
+  {
+    "name": "Ninja Gaiden - Dragon Sword",
+    "system": "nds",
+    "emulator": "DraStic",
+    "romPath": "D:\\ROMS\\nds\\Ninja Gaiden - Dragon Sword.zip",
+    "devicePath": "/storage/emulated/0/ROMs/nds/NinjaGaidenDragonSword.zip"
+  },
+  {
+    "name": "The Simpsons Game",
+    "system": "nds",
+    "emulator": "DraStic",
+    "romPath": "D:\\ROMS\\nds\\Simpsons Game, The.zip",
+    "devicePath": "/storage/emulated/0/ROMs/nds/SimpsonsGame.zip"
+  },
+  {
+    "name": "Mario & Sonic at the Olympic Winter Games",
+    "system": "nds",
+    "emulator": "DraStic",
+    "romPath": "D:\\ROMS\\nds\\Mario & Sonic at the Olympic Winter Games.zip",
+    "devicePath": "/storage/emulated/0/ROMs/nds/MarioSonicWinter.zip"
+  },
+  {
+    "name": "Conker's Bad Fur Day",
+    "system": "n64",
+    "emulator": "Mupen64PlusFZ",
+    "romPath": "D:\\ROMS\\n64\\Conker's Bad Fur Day (NA).z64",
+    "devicePath": "/storage/emulated/0/ROMs/n64/ConkersBadFurDay.z64"
+  },
+  {
+    "name": "Perfect Dark",
+    "system": "n64",
+    "emulator": "Mupen64PlusFZ",
+    "romPath": "D:\\ROMS\\n64\\Perfect Dark (NA, Rev 1).z64",
+    "devicePath": "/storage/emulated/0/ROMs/n64/PerfectDark.z64"
+  },
+  {
+    "name": "Resident Evil 2",
+    "system": "n64",
+    "emulator": "Mupen64PlusFZ",
+    "romPath": "D:\\ROMS\\n64\\Resident Evil 2 (NA, Rev 1).z64",
+    "devicePath": "/storage/emulated/0/ROMs/n64/ResidentEvil2.z64"
+  },
+  {
+    "name": "God of War - Ghost of Sparta",
+    "system": "psp",
+    "emulator": "PPSSPP",
+    "romPath": "D:\\ROMS\\psp\\God of War - Ghost of Sparta (Europe) (En,Fr,De,Es,It).zip",
+    "devicePath": "/storage/emulated/0/ROMs/psp/GOWGhostOfSparta.zip"
+  },
+  {
+    "name": "God of War - Chains of Olympus",
+    "system": "psp",
+    "emulator": "PPSSPP",
+    "romPath": "D:\\ROMS\\psp\\God of War - Chains of Olympus (USA).iso",
+    "devicePath": "/storage/emulated/0/ROMs/psp/GOWChainsOfOlympus.iso"
+  },
+  {
+    "name": "Tekken 6",
+    "system": "psp",
+    "emulator": "PPSSPP",
+    "romPath": "D:\\ROMS\\psp\\Tekken 6 (Europe) (En,Fr,De,Es,It,Ru).zip",
+    "devicePath": "/storage/emulated/0/ROMs/psp/Tekken6.zip"
+  }
+]

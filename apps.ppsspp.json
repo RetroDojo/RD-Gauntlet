@@ -1,0 +1,12 @@
+[
+  {
+    "name": "PPSSPP",
+    "package": "org.ppsspp.ppsspp",
+    "type": "game",
+    "durationSec": 120,
+    "monkeyEnabled": true,
+    "monkeyPctTouch": 70,
+    "monkeyPctMotion": 20,
+    "notes": "RG476H second-workload cross-device data point."
+  }
+]

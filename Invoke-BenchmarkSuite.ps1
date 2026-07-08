@@ -3,7 +3,8 @@ param(
     [string]$DeviceName,
     [string]$AppsConfig = ".\apps.json",
     [string]$OutDir,
-    [switch]$SkipMonkey
+    [switch]$SkipMonkey,
+    [bool]$MuteAudio = $true
 )
 
 Set-StrictMode -Version Latest
@@ -112,6 +113,22 @@ function Invoke-Adb {
     return [pscustomobject]@{
         ExitCode = $exitCode
         Output   = $text
+    }
+}
+
+function Set-DeviceVolumeMuted {
+    param([Parameter(Mandatory = $true)][string]$Serial)
+    # Streams: 1=system, 2=ring, 5=notification mute reliably via media_session --set 0.
+    # Stream 3 (music) is what games actually output through, but --set 0 on stream 3
+    # silently fails to persist on some builds; KEYCODE_VOLUME_DOWN (25) reliably drives
+    # the active stream (music, when a game/app is foregrounded) down to 0 instead.
+    foreach ($stream in 1, 2, 5) {
+        Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'cmd', 'media_session', 'volume', '--stream', "$stream", '--set', '0') -StepDescription "mute stream $stream" -AllowFailure | Out-Null
+    }
+    # Alarm stream (4) rejects index 0 on some builds (min index 1) - drop it to its floor instead.
+    Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'cmd', 'media_session', 'volume', '--stream', '4', '--set', '1') -StepDescription 'mute stream 4 (alarm floor)' -AllowFailure | Out-Null
+    for ($i = 0; $i -lt 30; $i++) {
+        Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'input', 'keyevent', '25') -StepDescription 'lower music volume' -AllowFailure | Out-Null
     }
 }
 
@@ -256,6 +273,145 @@ function Stop-RemoteTelemetry {
 function Stop-RemoteMonkey {
     param([Parameter(Mandatory = $true)][string]$Serial)
     Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'pkill', '-f', 'com.android.commands.monkey') -StepDescription 'Stopping monkey' -AllowFailure | Out-Null
+}
+
+function Ensure-DeviceAwake {
+    param([Parameter(Mandatory = $true)][string]$Serial)
+
+    Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'input', 'keyevent', '224') -StepDescription 'Waking device display' -AllowFailure | Out-Null
+    Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'input', 'keyevent', '82') -StepDescription 'Unlocking device display' -AllowFailure | Out-Null
+}
+
+function Convert-ToShellQuotedValue {
+    param([AllowEmptyString()][string]$Value)
+
+    if ($null -eq $Value) {
+        return '""'
+    }
+
+    return '"' + ($Value -replace '"', '\"') + '"'
+}
+
+function Get-LaunchIntentShellCommand {
+    param(
+        [Parameter(Mandatory = $true)]$App,
+        [Parameter(Mandatory = $true)][string]$DefaultPackage
+    )
+
+    $launchIntentProp = $App.PSObject.Properties['launchIntent']
+    if (-not $launchIntentProp -or $null -eq $launchIntentProp.Value) {
+        return $null
+    }
+
+    $launchIntent = $launchIntentProp.Value
+    $parts = New-Object System.Collections.Generic.List[string]
+    [void]$parts.Add('am start')
+
+    $action = if ($launchIntent.PSObject.Properties['action']) { [string]$launchIntent.action } else { '' }
+    if ([string]::IsNullOrWhiteSpace($action)) {
+        $action = 'android.intent.action.VIEW'
+    }
+    [void]$parts.Add('-a ' + (Convert-ToShellQuotedValue -Value $action))
+
+    if ($launchIntent.PSObject.Properties['dataUri'] -and -not [string]::IsNullOrWhiteSpace([string]$launchIntent.dataUri)) {
+        [void]$parts.Add('-d ' + (Convert-ToShellQuotedValue -Value ([string]$launchIntent.dataUri)))
+    }
+    if ($launchIntent.PSObject.Properties['type'] -and -not [string]::IsNullOrWhiteSpace([string]$launchIntent.type)) {
+        [void]$parts.Add('-t ' + (Convert-ToShellQuotedValue -Value ([string]$launchIntent.type)))
+    }
+
+    if ($launchIntent.PSObject.Properties['categories'] -and $null -ne $launchIntent.categories) {
+        foreach ($category in @($launchIntent.categories)) {
+            if (-not [string]::IsNullOrWhiteSpace([string]$category)) {
+                [void]$parts.Add('-c ' + (Convert-ToShellQuotedValue -Value ([string]$category))
+                )
+            }
+        }
+    }
+
+    if ($launchIntent.PSObject.Properties['component'] -and -not [string]::IsNullOrWhiteSpace([string]$launchIntent.component)) {
+        [void]$parts.Add('-n ' + (Convert-ToShellQuotedValue -Value ([string]$launchIntent.component)))
+    }
+    elseif ($launchIntent.PSObject.Properties['package'] -and -not [string]::IsNullOrWhiteSpace([string]$launchIntent.package)) {
+        [void]$parts.Add('-p ' + (Convert-ToShellQuotedValue -Value ([string]$launchIntent.package)))
+    }
+    else {
+        [void]$parts.Add('-p ' + (Convert-ToShellQuotedValue -Value $DefaultPackage))
+    }
+
+    if ($launchIntent.PSObject.Properties['stringExtras'] -and $null -ne $launchIntent.stringExtras) {
+        foreach ($prop in $launchIntent.stringExtras.PSObject.Properties) {
+            [void]$parts.Add('--es ' + (Convert-ToShellQuotedValue -Value $prop.Name) + ' ' + (Convert-ToShellQuotedValue -Value ([string]$prop.Value)))
+        }
+    }
+    if ($launchIntent.PSObject.Properties['intExtras'] -and $null -ne $launchIntent.intExtras) {
+        foreach ($prop in $launchIntent.intExtras.PSObject.Properties) {
+            [void]$parts.Add('--ei ' + (Convert-ToShellQuotedValue -Value $prop.Name) + ' ' + [int]$prop.Value)
+        }
+    }
+    if ($launchIntent.PSObject.Properties['boolExtras'] -and $null -ne $launchIntent.boolExtras) {
+        foreach ($prop in $launchIntent.boolExtras.PSObject.Properties) {
+            $boolString = if ([bool]$prop.Value) { 'true' } else { 'false' }
+            [void]$parts.Add('--ez ' + (Convert-ToShellQuotedValue -Value $prop.Name) + ' ' + $boolString)
+        }
+    }
+
+    return ($parts -join ' ')
+}
+
+function Grant-AppPermissions {
+    param(
+        [Parameter(Mandatory = $true)][string]$Serial,
+        [Parameter(Mandatory = $true)][string]$Package,
+        [string]$ErrorsLog
+    )
+
+    $commonPermissions = @(
+        'android.permission.RECORD_AUDIO',
+        'android.permission.READ_EXTERNAL_STORAGE',
+        'android.permission.WRITE_EXTERNAL_STORAGE',
+        'android.permission.READ_MEDIA_AUDIO',
+        'android.permission.READ_MEDIA_VIDEO',
+        'android.permission.READ_MEDIA_IMAGES',
+        'android.permission.POST_NOTIFICATIONS',
+        'android.permission.BLUETOOTH_CONNECT'
+    )
+
+    foreach ($permission in $commonPermissions) {
+        try {
+            $grantResult = Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'pm', 'grant', $Package, $permission) -StepDescription "Granting $permission to $Package" -AllowFailure
+            if ($grantResult.ExitCode -ne 0 -and -not [string]::IsNullOrWhiteSpace($grantResult.Output)) {
+                if ($grantResult.Output -notmatch 'Unknown permission|Operation not allowed|SecurityException|not a changeable permission type') {
+                    Write-Status -Message ("Permission grant warning for {0} {1}: {2}" -f $Package, $permission, $grantResult.Output.Trim()) -ErrorsLog $ErrorsLog -IsError
+                }
+            }
+        }
+        catch {
+            Write-Status -Message ("Permission grant exception for {0} {1}: {2}" -f $Package, $permission, $_.Exception.Message) -ErrorsLog $ErrorsLog -IsError
+        }
+    }
+}
+
+function Launch-App {
+    param(
+        [Parameter(Mandatory = $true)][string]$Serial,
+        [Parameter(Mandatory = $true)]$App,
+        [Parameter(Mandatory = $true)][string]$Package,
+        [string]$ErrorsLog
+    )
+
+    $intentCommand = Get-LaunchIntentShellCommand -App $App -DefaultPackage $Package
+    if (-not [string]::IsNullOrWhiteSpace($intentCommand)) {
+        Write-Status -Message ("Launching {0} via launchIntent." -f $Package)
+        $intentResult = Invoke-Adb -Arguments @('-s', $Serial, 'shell', $intentCommand) -StepDescription "Launching $Package via am start" -AllowFailure
+        if ($intentResult.ExitCode -eq 0 -and $intentResult.Output -notmatch '(?m)^Error:') {
+            return
+        }
+
+        Write-Status -Message ("launchIntent failed for {0}; falling back to launcher monkey. Output: {1}" -f $Package, $intentResult.Output.Trim()) -ErrorsLog $ErrorsLog -IsError
+    }
+
+    Invoke-Adb -Arguments @('-s', $Serial, 'shell', 'monkey', '-p', $package, '-c', 'android.intent.category.LAUNCHER', '1') -StepDescription "Launching $package" | Out-Null
 }
 
 function Capture-Screenshot {
@@ -581,6 +737,12 @@ if ($needPerfettoParser) {
 }
 
 Write-Status -Message ("Using device '{0}' ({1})" -f $targetDevice.Name, $targetDevice.AdbSerial)
+Invoke-Adb -Arguments @('-s', $targetDevice.AdbSerial, 'shell', 'settings', 'put', 'system', 'screen_off_timeout', '1800000') -StepDescription 'Extending screen timeout' -AllowFailure | Out-Null
+Ensure-DeviceAwake -Serial $targetDevice.AdbSerial
+if ($MuteAudio) {
+    Write-Status -Message 'Muting device volume (audio is not evaluated by this suite)...'
+    Set-DeviceVolumeMuted -Serial $targetDevice.AdbSerial
+}
 Ensure-TelemetryMonitor -Serial $targetDevice.AdbSerial -LocalScriptPath $telemetryLocalPath
 Ensure-RemoteScript -Serial $targetDevice.AdbSerial -LocalScriptPath $storageTestLocalPath -RemoteScriptPath '/data/local/tmp/storage-speed-test.sh'
 Ensure-RemoteScript -Serial $targetDevice.AdbSerial -LocalScriptPath $wifiTestLocalPath -RemoteScriptPath '/data/local/tmp/wifi-throughput-test.sh'
@@ -669,6 +831,7 @@ foreach ($app in $apps) {
             captureWifiThroughput = $captureWifiThroughput
             capturePerfetto = $capturePerfetto
             perfettoDurationSec = $perfettoDurationSec
+            launchIntent    = $app.launchIntent
             notes           = $app.notes
             skipMonkey      = $SkipMonkey.IsPresent
         })
@@ -681,8 +844,10 @@ foreach ($app in $apps) {
             throw "Package '$package' is not installed or not visible to pm path."
         }
 
+        Ensure-DeviceAwake -Serial $targetDevice.AdbSerial
         Invoke-Adb -Arguments @('-s', $targetDevice.AdbSerial, 'shell', 'am', 'force-stop', $package) -StepDescription "Force-stopping $package before launch" -AllowFailure | Out-Null
-        Invoke-Adb -Arguments @('-s', $targetDevice.AdbSerial, 'shell', 'monkey', '-p', $package, '-c', 'android.intent.category.LAUNCHER', '1') -StepDescription "Launching $package" | Out-Null
+        Grant-AppPermissions -Serial $targetDevice.AdbSerial -Package $package -ErrorsLog $errorsLog
+        Launch-App -Serial $targetDevice.AdbSerial -App $app -Package $package -ErrorsLog $errorsLog
         Start-Sleep -Seconds 4
 
         try {

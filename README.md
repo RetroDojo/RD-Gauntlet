@@ -26,6 +26,9 @@ Reusable, device-agnostic ADB-driven hardware test orchestration for RetroDojo A
 - `Invoke-StickDriftCheck.ps1` - manual idle analog drift checker (standalone helper)
 - `New-ComparisonDataset.ps1` - rebuilds long-format cross-run/cross-device comparison dataset
 - `New-ComparisonCharts.ps1` - generates first-pass comparison charts from the dataset
+- `Analyze-Screenshot.py` - single screenshot visual/color/sharpness analysis JSON
+- `Compare-Screenshots.py` - pairwise screenshot comparison (SSIM + color/sharpness deltas)
+- `Invoke-VisualAnalysis.ps1` - optional standalone wrapper for analysis/comparison runs
 
 ## Comparison dataset + charts (Phase 1)
 
@@ -83,12 +86,62 @@ Recommended conventions:
 - `monkeyEnabled: true` only when monkey input is acceptable for that app
 - `capturePerfetto`, `captureStorageSpeed`, `captureWifiThroughput`: optional per-app captures (default `false`)
 - `perfettoDurationSec`: short capture window for Perfetto prototype (default `15`)
+- `launchIntent`: optional explicit launch definition used with `adb shell am start ...` before telemetry/monkey loop
+
+`launchIntent` example (direct ROM open, when the app supports `ACTION_VIEW`):
+
+```json
+{
+  "name": "DraStic",
+  "package": "com.dsemu.drastic",
+  "type": "game",
+  "durationSec": 120,
+  "monkeyEnabled": true,
+  "launchIntent": {
+    "action": "android.intent.action.VIEW",
+    "dataUri": "file:///storage/emulated/0/ROMs/nds/SonicRush.zip",
+    "type": "*/*",
+    "component": "com.dsemu.drastic/.DraSticActivity"
+  }
+}
+```
+
+When `launchIntent` is not present, the suite keeps the existing launcher behavior (`monkey -p <pkg> -c android.intent.category.LAUNCHER 1`) for backward compatibility.
 
 `devices.json` supports suite-level optional flags:
 
 - `checkStickDrift` (manual idle check; default `false`)
 - `sampleHaptics` (best-effort rumble probe; default `false`)
 - `capturePerfetto`, `captureStorageSpeed`, `captureWifiThroughput` (device defaults for all apps)
+
+## Test content pipeline (new)
+
+Use these helpers to stage real game content from your local libraries (outside git):
+
+- `test-content.json` - curated `(system, romPath, devicePath)` entries from `D:\ROMS\...`
+- `Push-TestContent.ps1` - pushes content via ADB, checks `/storage/emulated/0` free space, and skips large files when space is insufficient
+- `test-content-matrix.md` - curated “intense” title rationale + blocked/gap tracking
+
+Example:
+
+```powershell
+.\Push-TestContent.ps1 -DeviceName RG476H -Systems nds,n64
+```
+
+### BIOS convention for future systems
+
+For PS1/PS2/GameCube/Dreamcast BIOS, keep dumps in the existing flat folder:
+
+- `D:\bios\`
+
+`Push-TestContent.ps1` maps known filenames automatically:
+
+- PS1: `scph*.bin`
+- PS2: `ps2-*.bin`
+- Dreamcast: `dc_boot.bin`, `dc_flash.bin`, `dc_nvmem.bin`
+- GameCube: `IPL.bin`
+
+Matches are pushed to `/storage/emulated/0/ROMs/bios/<system>/` (and PS1/Dreamcast are also mirrored to `/storage/emulated/0/RetroArch/system/` for RetroArch usage). If no system match is found, it logs `BIOS not found, skipping`.
 
 ## Run the suite
 
@@ -155,6 +208,57 @@ The main suite calls the report generator automatically, but you can rerun it la
 - best-effort frame timing summary from `dumpsys gfxinfo ... framestats`
 - optional storage/WiFi/Perfetto result tables when those artifacts exist
 
+## Optional visual screenshot analysis (new)
+
+This is an opt-in post-processing capability (not auto-run by `Invoke-BenchmarkSuite.ps1`) for assessing final on-screen image characteristics from saved screenshots.
+
+### Single screenshot analysis
+
+```powershell
+python .\Analyze-Screenshot.py .\results\rg476h-emulator-batch\DraStic\00-launch.png --out-json .\results\visual-analysis\drastic-launch.json
+```
+
+Outputs JSON with:
+
+- screenshot resolution + aspect ratio
+- panel/context info when nearby `device-info.json` exists (for example parsed `wmSize`)
+- average RGB + per-channel mean/std + coarse 16-bucket histograms
+- Laplacian-variance sharpness score
+- banding/posterization heuristic indicators
+
+### Pairwise screenshot comparison
+
+```powershell
+python .\Compare-Screenshots.py .\results\full-validation-retroarch\RetroArch\00-launch.png .\results\full-validation-rg476h\RetroArch\00-launch.png --out-json .\results\visual-analysis\retroarch-cross-device.json --out-md .\results\visual-analysis\retroarch-cross-device.md
+```
+
+Outputs JSON + Markdown summary with:
+
+- SSIM (uses `scikit-image` when available; otherwise manual Gaussian-window fallback)
+- average RGB channel deltas (`B - A`)
+- sharpness delta (`B - A`) from Laplacian variance
+- human-readable interpretation (for example warmer/cooler, sharper/blurrier wording)
+
+### PowerShell wrapper shortcuts
+
+Analyze launch+end screenshots for one app run:
+
+```powershell
+.\Invoke-VisualAnalysis.ps1 -RunDir .\results\rg476h-emulator-batch -AppName DraStic
+```
+
+Cross-run comparison for the same app shot name:
+
+```powershell
+.\Invoke-VisualAnalysis.ps1 -RunDirA .\results\full-validation-retroarch -RunDirB .\results\full-validation-rg476h -CrossAppName RetroArch -ShotName 00-launch.png
+```
+
+### Scope and limitation (important)
+
+- Raw Android `screencap` captures the **final composited panel-resolution frame**.
+- That means this tooling can quantify **final on-screen** color/contrast/sharpness differences.
+- It **cannot directly prove internal emulator render resolution or upscale filter** choice from screencap alone; use wording accordingly in reports.
+
 ## Framestats parsing notes
 
 `New-BenchReport.ps1` is intentionally defensive because `dumpsys gfxinfo <package> framestats` varies by Android version:
@@ -174,6 +278,9 @@ This suite is intentionally honest about what monkey automation can and cannot d
 - `monkey` does **not** reliably find or press a benchmark app's real **Start Test** button across arbitrary UI layouts, screen sizes, launchers, dialogs, or app updates.
 - For **official 3DMark / Geekbench scores**, prefer `-SkipMonkey` and tap through the benchmark flow manually while telemetry logs in the background.
 - For emulator/game testing, monkey can keep UI activity alive, but meaningful gameplay load still depends on content already loaded inside the emulator/game.
+- Direct intent launch support is app-specific: on RG476H we confirmed `ACTION_VIEW` patterns for DraStic and Mupen64PlusFZ; RetroArch (`com.retroarch.aarch64`) currently exposes only MAIN/launcher in resolver output and did not auto-open PSX content via tested explicit VIEW launch.
+- Dreamcast/Flycast remains blocked in this workflow while `D:\ROMS\dc` is empty (and requires user-owned content + BIOS dumps).
+- BIOS availability is no longer the blocker for PS1/PS2/GameCube/Dreamcast in this environment (`D:\bios` is populated); current blockers are emulator/core availability (PS1 RetroArch load-core list did not show a PlayStation core on this RG476H state, no standalone PS2/GameCube emulator APK installed) plus missing Dreamcast ROM content.
 - `dumpsys batterystats --charged <package>` may be sparse or empty on unrooted / non-privileged builds.
 - WiFi throughput is internet-path dependent (CDN/ISP variability), not a pure local-link test.
 - Storage read throughput can be cache-influenced without root cache-drop.
