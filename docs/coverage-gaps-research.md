@@ -10,8 +10,8 @@ _Scope: research/docs only; no ADB/device operations performed._
 - `apps.json` currently has **PPSSPP** and **RetroArch** entries but no `launchIntent`, so they are monkey-launched today.
 
 Evidence:  
-- `tooling/device-bench-suite/Invoke-BenchmarkSuite.ps1:388-501, 954-975`  
-- `tooling/device-bench-suite/apps.json:31-57`
+- `Invoke-BenchmarkSuite.ps1:388-501, 954-975`  
+- `apps.json:31-57`
 
 ---
 
@@ -83,7 +83,7 @@ For direct content-open automation, treat as **speculative** until live-tested o
 
 - Existing suite docs already note PS1 remains blocked because current RG476H RetroArch core list did not show a PlayStation core.
 
-Evidence: `tooling/device-bench-suite/README.md:288-290`
+Evidence: `README.md:288-290`
 
 ### Actionable fixes/workarounds
 
@@ -115,7 +115,7 @@ Evidence: `tooling/device-bench-suite/README.md:288-290`
 
 - Current suite docs: no standalone PS2/GameCube emulator APK installed, so these systems remain blocked regardless of BIOS availability.
 
-Evidence: `tooling/device-bench-suite/README.md:290`
+Evidence: `README.md:290`
 
 ### Actionable fixes/workarounds
 
@@ -166,7 +166,7 @@ adb shell am start -n org.dolphinemu.dolphinemu/org.dolphinemu.dolphinemu.ui.mai
 
 - Suite matrix explicitly says Dreamcast blocked because `D:\ROMS\dc` is empty.
 
-Evidence: `tooling/device-bench-suite/test-content-matrix.md` (“Dreamcast/Flycast blocked... D:\ROMS\dc is currently empty”)
+Evidence: `test-content-matrix.md` (“Dreamcast/Flycast blocked... D:\ROMS\dc is currently empty”)
 
 ### Actionable fixes/workarounds
 
@@ -216,12 +216,12 @@ _No `.ps1`/`.json` modifications were made in this run._
 ## Sources
 
 ### Repo-local evidence
-- `tooling/device-bench-suite/Invoke-BenchmarkSuite.ps1:388-501,954-975`
-- `tooling/device-bench-suite/apps.json:31-57`
-- `tooling/device-bench-suite/apps.emulators.json`
-- `tooling/device-bench-suite/README.md:280-290`
-- `tooling/device-bench-suite/test-content-matrix.md`
-- `tooling/device-bench-suite/Push-TestContent.ps1:167-194,289-295`
+- `Invoke-BenchmarkSuite.ps1:388-501,954-975`
+- `apps.json:31-57`
+- `apps.emulators.json`
+- `README.md:280-290`
+- `test-content-matrix.md`
+- `Push-TestContent.ps1:167-194,289-295`
 
 ### Primary external sources
 - PPSSPP Android manifest:  

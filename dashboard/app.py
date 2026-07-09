@@ -82,7 +82,7 @@ def safe_rel_to_suite(path_text: str) -> Path:
     try:
         resolved.relative_to(SUITE_DIR.resolve())
     except Exception:
-        abort(400, description="Path must stay under device-bench-suite.")
+        abort(400, description="Path must stay under the RD Gauntlet suite root.")
     return resolved
 
 

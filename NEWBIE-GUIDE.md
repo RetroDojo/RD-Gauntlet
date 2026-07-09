@@ -129,7 +129,7 @@ Follow these steps in order.
 1. Open File Explorer on your PC.
 2. Go to this folder:
 
-   `C:\Users\User\OneDrive\Retro Dojo\GammaOSNext-RPC-Port\tooling\device-bench-suite`
+   `C:\Users\User\OneDrive\Retro Dojo\RD-Gauntlet`
 
 3. Find the file `devices.json`.
 4. Right-click it and choose **Open with > Notepad**.
@@ -234,7 +234,7 @@ Follow these steps in order.
 2. Go to the suite folder by typing this exactly, then press **Enter**:
 
     ```powershell
-    cd "C:\Users\User\OneDrive\Retro Dojo\GammaOSNext-RPC-Port\tooling\device-bench-suite"
+    cd "C:\Users\User\OneDrive\Retro Dojo\RD-Gauntlet"
     ```
 
 3. Run the suite for your device name from `devices.json`. Example:
@@ -347,7 +347,7 @@ Follow these steps in order.
    - Fix: run:
 
      ```powershell
-     cd "C:\Users\User\OneDrive\Retro Dojo\GammaOSNext-RPC-Port\tooling\device-bench-suite"
+     cd "C:\Users\User\OneDrive\Retro Dojo\RD-Gauntlet"
      ```
 
 3. **Problem: `no devices/emulators found`**
@@ -455,7 +455,7 @@ Follow these steps in order.
 8. Run:
 
    ```powershell
-   cd "C:\Users\User\OneDrive\Retro Dojo\GammaOSNext-RPC-Port\tooling\device-bench-suite"
+   cd "C:\Users\User\OneDrive\Retro Dojo\RD-Gauntlet"
    .\Invoke-BenchmarkSuite.ps1 -DeviceName YOUR-DEVICE-NAME
    ```
 

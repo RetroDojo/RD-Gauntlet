@@ -7,7 +7,7 @@
 
 ## Phase 2 implementation results (RPC6 live smoke test, July 2026)
 
-This section records what was implemented in `tooling/device-bench-suite` and what happened on a real connected RPC6 (GammaOS Next Android 14) during short smoke runs (10-30s per capability), not full 180s benchmark validation.
+This section records what was implemented in this repo (RD Gauntlet, formerly `tooling/device-bench-suite` inside `GammaOSNext-RPC-Port`) and what happened on a real connected RPC6 (GammaOS Next Android 14) during short smoke runs (10-30s per capability), not full 180s benchmark validation.
 
 ### Implemented
 

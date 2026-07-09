@@ -43,7 +43,7 @@ Parsing semantics match `New-BenchReport.ps1`:
 
 ## Run dataset build
 
-From `tooling/device-bench-suite/`:
+From ``:
 
 ```powershell
 .\New-ComparisonDataset.ps1 -ResultsRoot .\results

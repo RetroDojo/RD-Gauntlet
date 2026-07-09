@@ -1,10 +1,10 @@
 # Device Bench Dashboard (Flask + SQLite)
 
-Local web dashboard for `tooling/device-bench-suite` that launches benchmark jobs, tracks status, and browses reports/logs/results.
+Local web dashboard for RD Gauntlet that launches benchmark jobs, tracks status, and browses reports/logs/results.
 
 ## Quick start
 
-From `tooling/device-bench-suite/dashboard/`:
+From `dashboard/`:
 
 ```powershell
 pip install flask
@@ -41,7 +41,7 @@ Runtime state:
 
 This dashboard depends on the existing bench-suite scripts/configs. Share:
 
-1. Entire `tooling/device-bench-suite/` folder (including `dashboard/`)
+1. Entire repo root (including the `dashboard/` folder)
 2. Existing environment prerequisites already expected by this repo (`adb`, PowerShell, Python)
 3. On their machine:
    - `pip install flask`

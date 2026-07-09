@@ -152,4 +152,4 @@ That is credible, useful to buyers, and achievable by a solo creator.
 
 ---
 
-*Research prepared for RetroDojo's device-bench-suite tooling. Complements `automation-research-findings.md` (ADB/software-side technical findings) with the competitive/market angle: where existing review methodology stops, and where a repeatable automated pipeline + one cheap physical rig can create genuine, defensible differentiation in the retro-handheld review niche.*
+*Research prepared for RetroDojo's RD Gauntlet tooling (formerly `device-bench-suite`, spun out of `GammaOSNext-RPC-Port`). Complements `automation-research-findings.md` (ADB/software-side technical findings) with the competitive/market angle: where existing review methodology stops, and where a repeatable automated pipeline + one cheap physical rig can create genuine, defensible differentiation in the retro-handheld review niche.*
