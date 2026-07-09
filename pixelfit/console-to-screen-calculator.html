@@ -686,11 +686,26 @@
       return resp.json();
     }
 
+    // device-specs.json is shared with Build-VisualGrid.py and lives at the
+    // RD Gauntlet repo root (one level up from this pixelfit/ folder), not
+    // duplicated here. Tries the repo-root path first, then falls back to a
+    // same-folder copy -- this is the only line that needs to change if
+    // pixelfit/ is ever split into its own standalone repo: copy
+    // device-specs.json alongside this file and the same-folder fallback
+    // below will pick it up with no further edits.
+    async function loadDeviceSpecs() {
+      try {
+        return await loadJson('../device-specs.json');
+      } catch (err) {
+        return loadJson('./device-specs.json');
+      }
+    }
+
     async function init() {
       const status = document.getElementById('dataStatus');
       try {
         const [devices, consoles] = await Promise.all([
-          loadJson('./device-specs.json'),
+          loadDeviceSpecs(),
           loadJson('./console-specs.json')
         ]);
         state.devices = devices;

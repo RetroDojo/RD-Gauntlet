@@ -28,7 +28,7 @@ python app.py --host 0.0.0.0 --port 8787   # LAN sharing if desired
 - **Jobs** list with live status, cancel, log tail, report and results browsing
 - **Compare** pipeline trigger (`New-ComparisonDataset.ps1` -> `New-ComparisonCharts.ps1`)
 - **Tools**:
-  - Open `console-to-screen-calculator.html`
+  - Open `pixelfit/console-to-screen-calculator.html` (RD PixelFit)
   - Run `Compare-Screenshots.py` between two existing screenshots
 
 Runtime state:

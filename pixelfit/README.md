@@ -1,10 +1,11 @@
-# Console-to-Screen Scaling Calculator
+# RD PixelFit — Console-to-Screen Scaling Calculator
 
-Standalone static reference tool for retro-native-resolution scaling math.
+Standalone static reference tool for retro-native-resolution scaling math, similar in spirit to
+[shauninman.com/utils/screens](https://shauninman.com/utils/screens/).
 
 - Main file: `console-to-screen-calculator.html`
-- Device DB: `device-specs.json`
-- Console DB: `console-specs.json`
+- Device DB: `../device-specs.json` (repo root — **shared** with `Build-VisualGrid.py`, see "Splitting this out" below)
+- Console DB: `console-specs.json` (lives in this folder — used only by this calculator)
 
 ## What it does
 
@@ -22,8 +23,24 @@ Pick a **console/system** and a **handheld device** and it computes:
 
 Open `console-to-screen-calculator.html` directly in a browser.
 
-- Preferred path: keep `device-specs.json` and `console-specs.json` in the same folder.
-- Some browsers block `fetch()` from `file://` for local JSON. To keep this tool usable without a server, the HTML includes a small fallback dataset when JSON fetch is blocked.
+- It loads `../device-specs.json` (repo root) and `./console-specs.json` (this folder).
+- Some browsers block `fetch()` from `file://` for local JSON. To keep this tool usable without a
+  server, the HTML includes a small fallback dataset when JSON fetch is blocked.
+
+## Splitting this out into its own repo later
+
+This folder (`pixelfit/`) was deliberately isolated so it can become its own standalone repo with
+minimal friction if it ever grows into a bigger public-facing tool:
+
+1. Copy the whole `pixelfit/` folder to the new repo.
+2. Copy `device-specs.json` from the RD Gauntlet repo root into the new repo's `pixelfit/` folder
+   (same level as `console-to-screen-calculator.html`).
+3. Nothing else changes: `loadDeviceSpecs()` in the HTML already tries `../device-specs.json`
+   first, then falls back to `./device-specs.json` in the same folder — the fallback path is
+   exactly the layout a standalone copy would have.
+4. After the split, remember `device-specs.json` is now a **fork**, not shared with
+   `Build-VisualGrid.py` anymore — device entries added in one repo won't automatically appear in
+   the other. Decide whether to keep them in sync manually or let them diverge.
 
 ## Data conventions
 
