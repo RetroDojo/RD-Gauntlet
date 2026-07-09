@@ -264,7 +264,13 @@ if (-not (Test-Path -LiteralPath $resolvedDatasetPath)) {
     throw "Dataset file not found: $resolvedDatasetPath. Run New-ComparisonDataset.ps1 first."
 }
 
-$datasetRows = @(Get-Content -LiteralPath $resolvedDatasetPath -Raw | ConvertFrom-Json)
+$datasetRawJson = Get-Content -LiteralPath $resolvedDatasetPath -Raw
+# NOTE: on Windows PowerShell 5.1 (the engine the dashboard launches jobs with via powershell.exe),
+# ConvertFrom-Json does not reliably enumerate a large top-level JSON array onto the pipeline -- the
+# whole 1000+-row array can arrive as a single wrapped element inside @(), which silently breaks row
+# counts and downstream property access (e.g. "Property 'device_name' cannot be found"). Piping through
+# ForEach-Object forces normal array enumeration and fixes this on both PS 5.1 and PS 7+.
+$datasetRows = @(ConvertFrom-Json -InputObject $datasetRawJson | ForEach-Object { $_ })
 if ($datasetRows.Count -eq 0) {
     throw "Dataset was empty: $resolvedDatasetPath"
 }
