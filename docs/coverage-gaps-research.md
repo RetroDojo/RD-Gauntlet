@@ -254,6 +254,98 @@ Two comparison/upgrade opportunities also surfaced (lower priority, not blocking
 
 ---
 
+## 6) Gap: Linux CFW (ROCKNIX/Knulli) bench feasibility — 2026-07-08
+
+**Status: researched, not scheduled — backlog, low priority.**
+
+Question investigated: could this repo's ADB-based bench methodology be ported to run
+against devices running Linux custom firmware (ROCKNIX, Knulli), instead of Android?
+Verdict: **conditionally feasible, category (b) — feasible with meaningfully reduced
+telemetry fidelity.** The user's initial gut feeling ("no or limited") was directionally
+correct for GPU utilization and full-fidelity battery/frame stats, but wrong for the
+basic CPU/thermal/battery-level telemetry, which ports over cleanly.
+
+### Transport layer
+
+- Neither ROCKNIX nor Knulli ships ADB (confirmed via direct scan of ROCKNIX's
+  `packages/network/` — no `adb`/`android-tools` package present).
+- **SSH is the only remote-shell option**: ROCKNIX uses OpenSSH (port 22, default
+  `root`/`rocknix`), Knulli uses Dropbear (port 22, default `root`/`linux`). Both require
+  manually enabling SSH via the device's on-screen settings menu — no way to enable it
+  remotely before that first manual step.
+- `adb shell <cmd>` → `ssh root@<ip> <cmd>` and `adb push` → `scp`/`sftp` is a clean,
+  near drop-in replacement for the transport layer. Caveat: no USB fallback — Wi-Fi +
+  SSH-enabled is mandatory.
+
+### What ports over cleanly (full parity, easy to script)
+
+- **CPU utilization** (`/proc/stat`) — identical file format to Android.
+- **CPU frequency** (`/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq`) — same path.
+- **Thermal zones** (`/sys/class/thermal/thermal_zone*/temp`) — standard kernel interface;
+  zone *names*/indices differ per SoC (needs a small per-device-model lookup table, same
+  pattern already used for Android per-device quirks).
+- **Battery level %** (`/sys/class/power_supply/[Bb]at*/capacity`) — confirmed in JELOS
+  `001-functions` source.
+
+Practically: this is a near 1:1 port of the existing ADB polling loop, swapping
+`adb shell` for `ssh root@$DeviceIP`. Estimated effort: **~1 day** for a
+`New-Telemetry-SSH.ps1`-style sibling script + one small thermal-zone-name lookup table +
+validation against one real ROCKNIX device.
+
+One-time manual step per device (not scriptable): enable SSH in the device's settings
+menu, then `ssh-copy-id` once for keyless auth on future runs. After that, zero ongoing
+manual intervention for telemetry collection.
+
+### What's degraded or missing (the real gap)
+
+- **GPU busy-% — the biggest loss.** Open-source Panfrost (Rockchip) and Freedreno
+  (Qualcomm) drivers used on ROCKNIX **do not expose a utilization sysfs node** the way
+  Android's proprietary kgsl (Qualcomm)/Mali-BSP drivers do. This is architectural, not a
+  packaging gap — there is no equivalent metric available for most ROCKNIX devices.
+  Exception: Allwinner H700 BSP Mali G31 (Knulli/Anbernic RG35XX-class) *may* expose
+  `/sys/devices/platform/gpufreq/loading`, but this is unverified inference, not confirmed
+  from source — would need on-device testing.
+- **Coulomb-counter battery accuracy** — absent/unreliable on Allwinner H700 devices
+  (Knulli's primary low-end target); Knulli's own docs acknowledge this and ship a
+  voltage-based estimation workaround ("BatteryPlus"). Better on Qualcomm-based ROCKNIX
+  devices (Odin 2, RP5) where a proper fuel-gauge IC is typically present.
+- **No `dumpsys gfxinfo` / `dumpsys batterystats` equivalent** — no structurally similar
+  Linux tool exists; frame timing would have to come from RetroArch's own FPS logging
+  instead of a system-level profiler.
+- **No `monkey` equivalent** — synthetic input load would require a custom
+  `/dev/input/eventX` raw-byte injection script, calibrated per device (finding the right
+  event node via `/proc/bus/input/devices`). Feasible, but no drop-in tool.
+- **Auto-launch is meaningfully clunkier than `adb shell am start`** — requires SSHing in,
+  stopping/suspending EmulationStation first, setting Wayland (`WAYLAND_DISPLAY`,
+  `XDG_RUNTIME_DIR`) environment variables correctly, then calling `/usr/bin/runemu.sh`
+  with the right ROM/core/system args. Workable but fragile; exact Wayland socket path
+  is inferred, not empirically verified on real hardware.
+
+### Decision
+
+Not scheduled. Tracked as a low-priority backlog item
+(`backlog-linux-cfw-telemetry` in the project todo tracker) in case ROCKNIX/Knulli device
+coverage becomes a priority later. If pursued, scope should be split into two separate
+efforts: (1) basic SSH telemetry (CPU/thermal/battery — easy, ~1 day), and (2) full
+auto-launch + GPU/input automation (fragile, bigger lift, treat as a separate future
+decision — do not bundle with basic telemetry work).
+
+### Sources
+
+- `ROCKNIX/distribution` GitHub repo, `packages/network/` directory listing (fetched 2026-07-08)
+- `JustEnoughLinuxOS/distribution` — `platforms/RK3566/010-governors`,
+  `RK3588/010-governors`, `S922X/010-governors` quirk files (fetched 2026-07-08)
+- `JustEnoughLinuxOS/distribution` — `packages/jelos/profile.d/001-functions` (fetched 2026-07-08)
+- `JustEnoughLinuxOS/distribution` — `packages/jelos/sources/scripts/runemu.sh`,
+  `distributions/ROCKNIX/config/functions` (`add_es_system()`) (fetched 2026-07-08)
+- https://rocknix.org/contribute/quirks/ (fetched 2026-07-08)
+- https://rocknix.org/devices/ayn/odin2/ (fetched 2026-07-08)
+- https://knulli.org/configure/batteryplus/ (fetched 2026-07-08)
+- `batocera-linux/batocera.linux` — `S31emulationstation` init script (fetched 2026-07-08)
+- ROCKNIX release tag `20260701`; Knulli release "Scarab"
+
+---
+
 ## Low-risk repo changes that could be made now (not applied in this pass)
 
 1. Add PPSSPP `launchIntent` to `apps.json` (high-confidence, based on official manifest).  
