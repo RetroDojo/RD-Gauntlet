@@ -26,6 +26,7 @@ DB_PATH = DASHBOARD_DIR / "jobs.db"
 INVOKE_SCRIPT = SUITE_DIR / "Invoke-BenchmarkSuite.ps1"
 COMPARE_DATASET_SCRIPT = SUITE_DIR / "New-ComparisonDataset.ps1"
 COMPARE_CHARTS_SCRIPT = SUITE_DIR / "New-ComparisonCharts.ps1"
+EXPORT_STATIC_SCRIPT = SUITE_DIR / "Export-StaticResults.ps1"
 COMPARE_SCREENSHOTS_SCRIPT = SUITE_DIR / "Compare-Screenshots.py"
 
 app = Flask(__name__, template_folder=str(DASHBOARD_DIR / "templates"))
@@ -538,6 +539,37 @@ exit $LASTEXITCODE
     ]
     launch_job_process(job_id, command, SUITE_DIR, log_path)
     return jsonify({"ok": True, "jobId": job_id})
+
+
+@app.post("/api/publish-static")
+def api_publish_static() -> Any:
+    log_path = LOGS_DIR / "pending.log"
+    publish_dir = RESULTS_DIR / "publish"
+    job_id = insert_job(
+        kind="publish",
+        device_name=None,
+        apps_config_path=None,
+        out_dir=publish_dir.relative_to(SUITE_DIR).as_posix(),
+        log_path=str(log_path),
+        extra_args={"script": "Export-StaticResults.ps1"},
+    )
+
+    log_path = LOGS_DIR / f"{job_id}.log"
+    update_job(job_id, log_path=str(log_path))
+    command = [
+        "powershell.exe",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        str(EXPORT_STATIC_SCRIPT),
+        "-ResultsRoot",
+        str(RESULTS_DIR),
+        "-PublishRoot",
+        str(publish_dir),
+    ]
+    launch_job_process(job_id, command, SUITE_DIR, log_path)
+    return jsonify({"ok": True, "jobId": job_id, "publishDir": str(publish_dir)})
 
 
 @app.post("/api/jobs/<int:job_id>/cancel")

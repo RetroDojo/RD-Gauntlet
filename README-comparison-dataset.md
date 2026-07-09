@@ -92,6 +92,28 @@ This implementation uses a self-contained HTML file with Chart.js from CDN (no P
 
 Human review of chart choices is still recommended before publishing website/video content.
 
+## Publishing a static, shareable copy
+
+```powershell
+.\Export-StaticResults.ps1 -ResultsRoot .\results -PublishRoot .\results\publish
+```
+
+Outputs a self-contained folder (`.\results\publish\` by default):
+
+- `index.html` -- simple branded landing page linking to the charts
+- `comparison-charts.html` -- copy of the generated charts (works standalone, no dependency on `results/`)
+- `comparison-charts-data.json` -- copy of the underlying chart data
+
+This is intentionally the single choke point for anything shared externally. The chart-data schema
+(`bar_data`: device/value/rows, `thermal_series`: device/run_id/app/thermal_zone/thermal_zone_avg_c/points)
+is already public-safe -- no `adb_serial`, `build_fingerprint`, or `product_model` fields are present, only
+friendly device labels (e.g. `RPC6`, `RG476H`). If the chart-data schema ever grows to include raw run
+metadata, add redaction inside `Export-StaticResults.ps1` before copying.
+
+The `results\publish\` folder can be zipped/uploaded anywhere (a personal site, GitHub Pages, etc.) as-is.
+Building an actual hosted public-facing page (vs. a folder you upload yourself) is an explicitly deferred
+follow-on feature -- see "Out of scope" below.
+
 ## Scope boundary
 
 This is **Phase 1 only**: shared comparison dataset + first-pass charts.
@@ -101,5 +123,7 @@ Out of scope here:
 - polished video-ready motion graphics
 - embeddable production website widgets
 - richer interaction/filters/themes
+- hosted public-facing web page (a self-service static-file export is available now via
+  `Export-StaticResults.ps1`; actual hosting/deployment is a deferred follow-on feature)
 
 Those are follow-on Phase 2 tasks built on this dataset layer.

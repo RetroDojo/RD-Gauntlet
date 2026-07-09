@@ -101,6 +101,13 @@
         <span id="compareMsg" class="small"></span>
       </div>
       <p><a id="chartsLink" href="/files?path=results/comparison-charts/comparison-charts.html" target="_blank">Open comparison-charts.html</a></p>
+      <h3>Publish static, shareable copy</h3>
+      <p class="small">Copies the charts into results/publish/ (index.html + charts + data) with no serials/build fingerprints -- safe to zip and share externally.</p>
+      <div class="row">
+        <button id="publishStaticBtn">Publish static results</button>
+        <span id="publishMsg" class="small"></span>
+      </div>
+      <p><a id="publishLink" href="/files?path=results/publish/index.html" target="_blank">Open published index.html</a></p>
     </section>
 
     <section id="tab-tools" class="tab">
@@ -238,6 +245,16 @@
       }
     }
 
+    async function publishStatic(){
+      try{
+        const r = await fetchJson('/api/publish-static', {method:'POST'});
+        el('publishMsg').textContent = `Publish job #${r.jobId} started.`;
+        await loadJobs();
+      }catch(err){
+        el('publishMsg').textContent = 'Failed: ' + err.message;
+      }
+    }
+
     async function loadShotSuggestions(){
       const shots = await fetchJson('/api/screenshot-files');
       el('shotList').innerHTML = shots.map(s => `<div>${s}</div>`).join('');
@@ -257,6 +274,7 @@
 
     el('launchBtn').addEventListener('click', launchJob);
     el('runCompareBtn').addEventListener('click', runComparison);
+    el('publishStaticBtn').addEventListener('click', publishStatic);
     el('compareShotsBtn').addEventListener('click', compareShots);
 
     (async function init(){
