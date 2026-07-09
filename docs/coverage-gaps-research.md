@@ -346,6 +346,71 @@ decision — do not bundle with basic telemetry work).
 
 ---
 
+## 7) New devices: Retroid Pocket Nova & TrimUI Brick Pro — 2026-07-09
+
+**Status: specs confirmed. `devices.json` entries pending hardware arrival.**
+
+Both devices were ordered by the user during this research pass. Verdict on the two
+open questions:
+
+### Retroid Pocket Nova
+
+- **SoC: Qualcomm QCS8550** ("Dragonwing" variant) — **same CPU cores and same Adreno 740
+  GPU as Snapdragon 8 Gen 2**, just with the 5G modem stripped out (irrelevant for a
+  handheld). For gaming performance purposes this is functionally identical to SD 8 Gen 2.
+- RAM: 8GB or 12GB LPDDR5X. Display: 4.5" AMOLED, 1280×960 (4:3), 120Hz. Battery: 5000mAh.
+  OS: **Android 13**.
+- **Result: the Nova ties the Odin 2 Base at the top performance tier — it is NOT a
+  naming-trap downgrade** the way RPF2 turned out to be. Odin 2 Base is **no longer the
+  sole highest-end device** in this device set; it's now a two-way tie with the Nova.
+- ADB: expected to work unrestricted (every prior Retroid Pocket Android device has),
+  but this is an inference from OS + historical pattern, not yet hands-on confirmed —
+  device only opened preorders June 26, 2026, no shipping-unit review existed at
+  research time.
+- Pricing: $229 (8GB) / $269–274 (12GB). Preorder sold out within hours of opening.
+
+### TrimUI Brick Pro
+
+- **SoC: Allwinner A133p, GPU: PowerVR GE8300** — a budget embedded chipset, same family
+  used in the original TrimUI Brick/Brick Hammer. RAM: 1GB LPDDR3. Display: 3.95" IPS,
+  1024×768, 60Hz. Battery: 5000mAh.
+- **OS: Linux 4.9 / Trim-UI Linux — confirmed NOT Android**, despite earlier leaked videos
+  (Nov 2025–Feb 2026) that appeared to show an Android home screen and PS2 emulation
+  (NetherSX2). The official June 14, 2026 spec sheet is unambiguous, and the confirmed
+  hardware (PowerVR GE8300 @ 660MHz) is **not physically capable of PS2 emulation** —
+  those earlier leak videos remain unexplained but don't reflect the shipping product.
+- **No ADB — SSH is the only remote-shell path**, same as the ROCKNIX/Knulli finding in
+  section 6 above. Knulli CFW already supports the related Smart Pro/Brick/Hammer models
+  (default `root`/`linux`); Brick Pro-specific Knulli support and stock-firmware SSH
+  credentials are not yet confirmed, but the SSH-only pattern is certain.
+- Pricing: $99.99 (console only) to $134.99 (w/ 256GB card). Ships after June 30, 2026.
+
+### Implications for this project
+
+- Do **not** add TrimUI Brick Pro to the PS2 test matrix — hardware can't run it.
+- TrimUI Brick Pro ties directly into the low-priority Linux CFW backlog item
+  (`backlog-linux-cfw-telemetry`) — it has no Android/ADB layer at all, so any bench
+  coverage for it depends on that backlog work being picked up.
+- Retroid Nova should be treated like any other Retroid Pocket ADB device once it
+  arrives — no special-case scripting needed, same tooling as Odin 2 Base/RPF2/etc.
+- `devices.json` updates for both are tracked as a pending todo
+  (`add-devices-nova-brickpro`), gated on hardware arrival for final on-device
+  confirmation (ADB behavior on Nova, SSH credentials on Brick Pro).
+
+### Sources
+
+- https://retrohandhelds.gg/retroid-pocket-nova-everything-we-know/ (June 25, 2026)
+- https://retrohandhelds.gg/retroid-teases-a-new-43-oled-device-with-the-pocket-nova/ (June 24, 2026)
+- GBATemp thread 682739 (June 26, 2026)
+- https://trimuistore.com/blogs/news/trimui-brick-pro-trimui-brick-hammer-pro-u (June 14, 2026)
+- https://trimuistore.com/products/trimui-brick-pro-handheld-game-console.json (fetched July 9, 2026)
+- https://retrohandhelds.gg/trimui-brick-pro-everything-we-know-so-far/ and
+  https://retrohandhelds.gg/trimui-brick-pro-caught-in-the-wild/ (early leak coverage, ~Feb 2026)
+- https://knulli.org/configure/ssh/ (current)
+- https://trimuistore.com/blogs/news/new-knulli-scarab-os-for-trimui-handhelds (May 14, 2026)
+
+---
+
 ## Low-risk repo changes that could be made now (not applied in this pass)
 
 1. Add PPSSPP `launchIntent` to `apps.json` (high-confidence, based on official manifest).  
