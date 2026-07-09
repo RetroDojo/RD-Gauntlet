@@ -65,6 +65,6 @@
         "android.intent.category.LAUNCHER"
       ]
     },
-    "notes": "Launcher-only direct intent confirmed live on RG476H 2026-07-08 (reduces monkey randomness at app start). Direct content-open (auto-loading a specific ROM) is NOT wired here -- RetroArch's manifest exposes no ACTION_VIEW handler on this build, so opening a specific game still requires monkey/manual in-app navigation after launch."
+    "notes": "Launcher-only direct intent confirmed live on RG476H 2026-07-08 (reduces monkey randomness at app start). Direct content-open (auto-loading a specific ROM) is NOT wired here -- RetroArch's manifest exposes no ACTION_VIEW handler on this build, so opening a specific game still requires monkey/manual in-app navigation after launch. UPDATED 2026-07-08: upgraded in place to the nightly build (1.22.2_GIT, from buildbot.libretro.com/nightly/android/RetroArch_aarch64.apk -- always-latest symlink, no date-stamped URL needed) per user preference for nightly over stable. Same package ID (com.retroarch.aarch64), config/cores/BIOS all preserved across the upgrade; launcher intent and PS1 (PCSX ReARMed) direct-launch both re-verified working post-upgrade."
   }
 ]

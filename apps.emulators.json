@@ -92,5 +92,30 @@
       "component": "xyz.aethersx2.android/xyz.aethersx2.android.MainActivity"
     },
     "notes": "PS2 standalone emulator (NetherSX2/AetherSX2 fork) -- confirmed live on RG476H 2026-07-08: installed NetherSX2-v2.2n-4248.apk, BIOS pushed to Android/data/xyz.aethersx2.android/files/bios/ and imported via in-app SAF picker, ROM pushed to .../files/games/ and auto-detected on relaunch (no manual directory scan needed). Tapping the game entry launched EmulationActivity and reached real PS2 BIOS boot (memory-card-format prompt), confirming the full core+BIOS+content chain works. LIMITATION: pm dump shows only a MAIN/LAUNCHER intent filter -- no ACTION_VIEW handler, so there is no scriptable direct-file-launch intent (same limitation as RetroArch). Full automation of a specific game requires either (a) only ever having one game in the library, or (b) a UI-tap sequence to select it from the game list after launch. Standalone preferred over RetroArch's bundled dolphin_libretro/flycast cores per user preference for PS2/GameCube/Wii."
+  },
+  {
+    "name": "Dolphin-GC",
+    "package": "org.dolphinemu.dolphinemu",
+    "type": "game",
+    "durationSec": 120,
+    "monkeyEnabled": true,
+    "monkeyPctTouch": 70,
+    "monkeyPctMotion": 20,
+    "launchIntent": {
+      "action": "android.intent.action.MAIN",
+      "categories": [
+        "android.intent.category.LAUNCHER"
+      ],
+      "component": "org.dolphinemu.dolphinemu/org.dolphinemu.dolphinemu.ui.main.MainActivity"
+    },
+    "notes": "GameCube/Wii standalone emulator -- confirmed live on RG476H 2026-07-08: installed via F-Droid direct-download (org.dolphinemu.dolphinemu_42460.apk from f-droid.org/repo/, chosen over the official dolphin-emu.org download page because that page is behind a bunny.net bot-challenge that blocks scripted/headless downloads -- F-Droid's URL is a plain unauthenticated direct link, reproducible-build-signed). ROM pushed to /storage/emulated/0/ROMs/gc/ (existing GammaOS multi-system ROMs tree, alphabetical 'gc' folder), granted via in-app SAF 'Add Games' folder picker (persists across restarts). Game auto-scanned with full box-art metadata. Tapping game entry launched EmulationActivity, confirmed real GameCube boot (Ikaruga/Atari publisher logo with correct GC button-layout on-screen overlay). LIMITATION: pm dump shows only MAIN/LAUNCHER + TvMainActivity (LEANBACK_LAUNCHER) intent filters -- no ACTION_VIEW file handler, so no scriptable direct-file-launch intent (same limitation as RetroArch/NetherSX2). Source discovered via community-maintained RJNY/Obtainium-Emulation-Pack config, which independently corroborated NetherSX2's Trixarian/NetherSX2-patch source used above."
+  },
+  {
+    "name": "Daijishou",
+    "package": "com.magneticchen.daijishou",
+    "type": "frontend",
+    "durationSec": 60,
+    "monkeyEnabled": false,
+    "notes": "Universal ROM-library frontend/launcher (TapiocaFox/Daijishou) -- confirmed live on RG476H 2026-07-08: installed v1.5.0 (416.apk) from GitHub Releases, launched via MainActivity. Settings > Library > 'Download platforms' pulls a community-maintained catalog of 119 predefined platform configs (from Daijishou's own GitHub) covering nearly every system, each with a pre-wired default 'player' (emulator) association -- e.g. PlayStation Portable and Sega Genesis/Game Gear ship pre-checked/pre-imported out of the box. Validated the actual launch hand-off end-to-end: tapped a bundled demo PSX library entry ('Hover Racing') and confirmed via `dumpsys window` that Daijishou correctly invoked RetroArch (mFocusedApp=com.retroarch.aarch64/com.retroarch.browser.retroactivity.RetroActivityFuture) as the configured player -- i.e. the frontend drives the same launcher-only 'am start' component a human would, so it is NOT blocked by the ACTION_VIEW-handler limitation noted on RetroArch/NetherSX2/Dolphin-GC above. (The demo entry itself showed a black screen after hand-off because its placeholder ROM path doesn't exist on-device -- a content issue, not an integration failure.) CONCLUSION: Daijishou is a viable unifying frontend for all currently-installed emulators; a full real-ROM scan-and-launch validation (pointing a platform's 'Paths' at our actual ROMs tree) is still open for a future session. LIMITATION: pm dump not yet checked for its own intent surface (frontend apps generally aren't launched by external automation the same way -- they ARE the launcher)."
   }
 ]
