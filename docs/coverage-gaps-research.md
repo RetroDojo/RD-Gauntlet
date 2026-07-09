@@ -193,6 +193,67 @@ Evidence: `test-content-matrix.md` (“Dreamcast/Flycast blocked... D:\ROMS\dc i
 
 ---
 
+## 5) Gap: high-end device systems not yet set up (Odin 2 Base / RPF2) — 2026-07-08
+
+### Root cause
+
+Not a tooling gap — the bench-suite pipeline (launch, telemetry, monkey load, report) is
+system-agnostic and already works for every emulator listed in `apps.emulators.json`. The gap is
+purely **missing emulator APKs + BIOS + legal ROM dumps** for systems that weren't worth attempting
+on the lower/mid-tier devices tested previously (RG476H/RPC6-class), but that the higher-end
+**AYN Odin 2 Base** (SD 8 Gen 2 / Adreno 740) and **Retroid Pocket Flip 2 / RPF2** (SD865 / Adreno
+650 — corrected from an earlier assumption of SD 8 Gen 2/3; RPF2 is actually the same tier as
+RP5/RP Mini, see Retro Game Corps ROCKNIX guide, March 2026) can realistically attempt.
+
+Everything below requires the user to source content/APKs directly (same self-dump-only policy as
+the Dreamcast section above) before it can be added to `apps.emulators.json` and run through
+`Invoke-BenchmarkSuite.ps1`.
+
+### Actionable fixes/workarounds — per system
+
+| System | Emulator | APK source | BIOS/keys needed | Target device(s) | Benchmark titles |
+|---|---|---|---|---|---|
+| Wii U | Cemu (Android port) | `github.com/SSimco/Cemu/releases` | None for unencrypted `.rpx`/`.wua`; `keys.txt` for encrypted | Odin 2 Base primary; RPF2 as a stretch data point | Mario Kart 8, Wind Waker HD, BOTW (Wii U) |
+| PS Vita | Vita3K | `github.com/Vita3K/Vita3K-Android/releases` (tag `continuous`) | `PSP2UPDAT.PUP` + `PSVUPDAT.PUP` firmware installed in-app; Turnip driver recommended | Odin 2 Base primary; RPF2 limited to simple titles | Persona 4 Golden, Uncharted: Golden Abyss |
+| Saturn | Yaba Sanshiro 2 Pro (standalone) / RetroArch Beetle Saturn (core) | Play Store (`org.devmiyax.yabasanshioro2.pro`) / libretro nightly buildbot | `sega_101.bin` + `mpr-17933.bin` | RPF2 → YBS2 standalone; Odin 2 Base → Beetle Saturn core (more demanding/accurate) | Any CHD dump; community treats Saturn as a difficult-system stress test |
+| Switch | Eden | `eden-emu.dev` (self-hosted; GitHub repo is Nintendo-DMCA'd/451) or Obtainium | Turnip driver via Eden's built-in Driver Manager | Odin 2 Base only | Celeste (2D sanity check) → Super Mario Odyssey (gold-standard benchmark) → BOTW (heavy 3D stress test) |
+| Xbox 360 | X360 Mobile | `github.com/Ashnar2602/X360-Mobile---OFFICIAL/releases` or `x360mobile.com` | None documented | Odin 2 Base only (SD 8 Gen 2 recommended minimum; RPF2/SD865 below spec) | One light/indie title + one AAA bracket title (Halo 3 or Gears of War) |
+| PS3 | RPCSX-UI-Android | `github.com/RPCSX/rpcsx-ui-android` | Unknown — pre-alpha | Odin 2 Base only, investigative/Tier-3 only | N/A — expect instability, document current state only |
+
+Two systems already validated (Dolphin/Wii, Flycast/Dreamcast) are **not** included above since the
+tooling already handles them; the Wii pass just needs new test runs with motion-control mapping
+and VBI Skip notes (see prior GC section), and Dreamcast is purely blocked on ROM/BIOS sourcing
+(user handling separately) as described in section 4 above.
+
+Two comparison/upgrade opportunities also surfaced (lower priority, not blocking anything):
+- **Redream** (Play Store, `io.recompiled.redream`) as a standalone alternative to Flycast for
+  Dreamcast — community now prefers it, has auto-frameskip.
+- **DuckStation** (Play Store, `com.github.stenzek.duckstation`) as a standalone alternative to
+  RetroArch/PCSX ReARMed for PS1 — better enhancements (PGXP, upscaling).
+
+### Legal/distribution notes
+
+- **Switch (Eden)**: legally volatile — Nintendo has DMCA'd the GitHub repos of every major
+  Yuzu-lineage fork (Eden, Kenji-NX). Verify current download/legal status immediately before each
+  test session; this changes month to month. Do **not** use EggNS or DamonSwitch — confirmed
+  malware/GPL violations per EG Wiki.
+- **PS3/RPCS3-Android**: officially discontinued; RPCSX-UI-Android is the actively developed
+  successor but is pre-alpha.
+- All BIOS/firmware/game content must come from the user's own legally-owned hardware dumps —
+  same policy as the rest of this document.
+
+### Confidence
+
+- Odin 2 Base / RPF2 chipset identification: **Confirmed** (Retroid official product page;
+  Retro Game Corps ROCKNIX guide, March 2026)
+- Per-system emulator maturity/recommendation: **Confirmed** via Retro Game Corps Android Starter
+  Guide (updated Feb 10, 2026) and EG Wiki (live, 2026) — see full research report for citations
+- Specific performance-tier claims (e.g., "BOTW playable at 720p/30fps") are **inferred** from
+  community consensus, not fresh hardware-specific benchmarks on these exact two devices — this
+  repo's own benchmark runs will be the first first-party data point once tests are executed
+
+---
+
 ## Low-risk repo changes that could be made now (not applied in this pass)
 
 1. Add PPSSPP `launchIntent` to `apps.json` (high-confidence, based on official manifest).  
