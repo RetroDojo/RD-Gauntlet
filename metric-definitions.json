@@ -1,0 +1,102 @@
+{
+  "_comment": "Declarative metric metadata for RD Gauntlet telemetry/result columns. Pattern-matched against metric_name (regex, first match wins, top to bottom) so it works across devices without hardcoding per-SoC column names (CPU core count, thermal zone names, etc. all vary per device -- see telemetry-monitor.sh). Modeled on the Phoronix Test Suite test-profile schema's Proportion/ResultScale/ResultQuantifier vocabulary (pts-core/openbenchmarking.org/schemas/test-profile.xsd) -- see docs/result-schema-conventions.md for the full rationale and citations. proportion values: HIB (higher is better), LIB (lower is better), ABSTRACT (no inherent direction / context-dependent -- do not colorize as good/bad in charts).",
+  "schemaVersion": 1,
+  "definitions": [
+    {
+      "pattern": "^fpsEstimate$|_fps$|^avg_fps$",
+      "label": "Frame rate",
+      "resultScale": "Frames Per Second",
+      "proportion": "HIB",
+      "resultQuantifier": "AVG",
+      "notes": "From Parse-PerfettoSurfaceFps.py or future FPS-capture sources. Not currently a telemetry.csv column."
+    },
+    {
+      "pattern": "_frame_time_ms$|^frame_time_ms$",
+      "label": "Frame time",
+      "resultScale": "Milliseconds",
+      "proportion": "LIB",
+      "resultQuantifier": "AVG",
+      "notes": "Reserved for future frame-pacing capture."
+    },
+    {
+      "pattern": "^cpu\\d+_freq_khz$",
+      "label": "CPU core frequency",
+      "resultScale": "kHz",
+      "proportion": "HIB",
+      "resultQuantifier": "AVG",
+      "notes": "Sustained clock under a fixed workload is a reasonable proxy for 'not thermal throttling' -- this is a project convention, not a universal truth (idle/low-load frequency is not meaningfully 'better' higher). Column name varies by core count per device."
+    },
+    {
+      "pattern": "^cpu_total_util_pct$|^cpu\\d+_util_pct$",
+      "label": "CPU utilization",
+      "resultScale": "Percent",
+      "proportion": "ABSTRACT",
+      "resultQuantifier": "AVG",
+      "notes": "High utilization can mean either 'using the hardware well' or 'CPU-bound bottleneck' depending on context -- do not colorize as good/bad without the paired FPS result."
+    },
+    {
+      "pattern": "^gpu_busy_pct$",
+      "label": "GPU busy percentage",
+      "resultScale": "Percent",
+      "proportion": "ABSTRACT",
+      "resultQuantifier": "AVG",
+      "notes": "Same ambiguity as CPU utilization -- only available on Adreno (kgsl) and legacy Mali paths per telemetry-monitor.sh; absent on many devices (e.g. open-source Panfrost/Freedreno drivers under Linux CFW -- see docs/coverage-gaps-research.md section 6)."
+    },
+    {
+      "pattern": "^gpu_freq_hz$",
+      "label": "GPU frequency",
+      "resultScale": "Hz",
+      "proportion": "HIB",
+      "resultQuantifier": "AVG",
+      "notes": "Same sustained-clock-under-load convention as CPU frequency above."
+    },
+    {
+      "pattern": "^fan_pwm_duty$",
+      "label": "Fan PWM duty cycle",
+      "resultScale": "Duty (0-255)",
+      "proportion": "LIB",
+      "resultQuantifier": "AVG",
+      "notes": "Lower commanded fan effort for the same workload/ambient implies less thermal stress. Only present on devices with a PWM-driven fan and no RPM sensor."
+    },
+    {
+      "pattern": "^fan_speed_rpm$",
+      "label": "Fan speed",
+      "resultScale": "RPM",
+      "proportion": "LIB",
+      "resultQuantifier": "AVG",
+      "notes": "Only present on devices with an RPM-reporting fan (most handhelds are fanless)."
+    },
+    {
+      "pattern": "^batt_temp_c$|^tz_.*_c$",
+      "label": "Temperature",
+      "resultScale": "Celsius",
+      "proportion": "LIB",
+      "resultQuantifier": "AVG",
+      "notes": "Covers battery temp and all thermal-zone columns (zone names/counts vary per device -- see telemetry-monitor.sh zone auto-discovery)."
+    },
+    {
+      "pattern": "^batt_current_ua$",
+      "label": "Battery current",
+      "resultScale": "Microamps",
+      "proportion": "ABSTRACT",
+      "resultQuantifier": "AVG",
+      "notes": "Sign convention (charge vs discharge) is not normalized across all devices/kernels -- treat as informational, not directly comparable across devices without manual sign-checking."
+    },
+    {
+      "pattern": "^batt_level_pct$",
+      "label": "Battery level",
+      "resultScale": "Percent",
+      "proportion": "ABSTRACT",
+      "resultQuantifier": "AVG",
+      "notes": "An averaged snapshot over the test window is not a drain rate. For actual battery-life comparison, compute the delta of batt_charge_counter_uah across the run instead of using this average."
+    },
+    {
+      "pattern": "^batt_charge_counter_uah$",
+      "label": "Battery charge counter",
+      "resultScale": "Microamp-hours",
+      "proportion": "ABSTRACT",
+      "resultQuantifier": "AVG",
+      "notes": "Raw coulomb-counter snapshot. Comparable across runs on the same device as a delta (start-of-run minus end-of-run); the plain average reported here is informational only. Also degraded/inaccurate on some low-end SoCs -- see docs/coverage-gaps-research.md section 6."
+    }
+  ]
+}

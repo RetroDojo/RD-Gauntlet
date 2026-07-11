@@ -11,6 +11,16 @@
     "perfettoDurationSec": 15,
     "captureStorageSpeed": false,
     "captureWifiThroughput": false,
+    "testVersion": "1.0.0",
+    "timesToRun": 1,
+    "ignoreRuns": [],
+    "resultQuantifier": "AVG",
+    "primaryMetric": {
+      "name": "official_score",
+      "resultScale": "Score (test-specific, e.g. Wild Life Extreme/Solar Bay points)",
+      "proportion": "HIB",
+      "notes": "Manual/observed only -- not yet captured into result JSON. See metric-definitions.json for the telemetry-column conventions (proportion/scale/quantifier vocabulary) this follows."
+    },
     "notes": "Manual: user should tap through to Wild Life Extreme or Solar Bay; monkey only adds supplemental input/load variation and does not guarantee an official score run."
   },
   {
@@ -25,6 +35,16 @@
     "perfettoDurationSec": 15,
     "captureStorageSpeed": false,
     "captureWifiThroughput": false,
+    "testVersion": "1.0.0",
+    "timesToRun": 1,
+    "ignoreRuns": [],
+    "resultQuantifier": "AVG",
+    "primaryMetric": {
+      "name": "official_score",
+      "resultScale": "Score (CPU/GPU sub-scores, test-specific)",
+      "proportion": "HIB",
+      "notes": "Manual/observed only -- not yet captured into result JSON. Use -SkipMonkey to get a clean official run."
+    },
     "notes": "Manual: use -SkipMonkey when you want the official CPU/GPU benchmark flow and score capture."
   },
   {
@@ -44,6 +64,10 @@
       "dataUri": "file:///storage/emulated/0/ROMs/psp/BurnoutLegends.iso",
       "component": "org.ppsspp.ppsspp/org.ppsspp.ppsspp.PpssppActivity"
     },
+    "testVersion": "1.0.0",
+    "timesToRun": 1,
+    "ignoreRuns": [],
+    "resultQuantifier": "AVG",
     "notes": "Direct VIEW intent confirmed live on RG476H 2026-07-08 -- launches straight into real gameplay, no monkey/manual nav needed. Meaningful sustained load still benefits from monkey for in-game input variety."
   },
   {
@@ -65,6 +89,10 @@
         "android.intent.category.LAUNCHER"
       ]
     },
-    "notes": "Launcher-only direct intent confirmed live on RG476H 2026-07-08 (reduces monkey randomness at app start). Direct content-open (auto-loading a specific ROM) is NOT wired here -- RetroArch's manifest exposes no ACTION_VIEW handler on this build, so opening a specific game still requires monkey/manual in-app navigation after launch. UPDATED 2026-07-08: upgraded in place to the nightly build (1.22.2_GIT, from buildbot.libretro.com/nightly/android/RetroArch_aarch64.apk -- always-latest symlink, no date-stamped URL needed) per user preference for nightly over stable. Same package ID (com.retroarch.aarch64), config/cores/BIOS all preserved across the upgrade; launcher intent and PS1 (PCSX ReARMed) direct-launch both re-verified working post-upgrade."
+    "testVersion": "2.0.0",
+    "timesToRun": 1,
+    "ignoreRuns": [],
+    "resultQuantifier": "AVG",
+    "notes": "Launcher-only direct intent confirmed live on RG476H 2026-07-08 (reduces monkey randomness at app start). Direct content-open (auto-loading a specific ROM) is NOT wired here -- RetroArch's manifest exposes no ACTION_VIEW handler on this build, so opening a specific game still requires monkey/manual in-app navigation after launch. UPDATED 2026-07-08: upgraded in place to the nightly build (1.22.2_GIT, from buildbot.libretro.com/nightly/android/RetroArch_aarch64.apk -- always-latest symlink, no date-stamped URL needed) per user preference for nightly over stable. Same package ID (com.retroarch.aarch64), config/cores/BIOS all preserved across the upgrade; launcher intent and PS1 (PCSX ReARMed) direct-launch both re-verified working post-upgrade. testVersion bumped 1.0.0 -> 2.0.0 for this upgrade per the project's semantic test-versioning convention (docs/result-schema-conventions.md) -- results captured before 2026-07-08 used a different RetroArch build and should not be directly compared to results captured after."
   }
 ]

@@ -37,6 +37,9 @@ Formerly `tooling/device-bench-suite` inside `GammaOSNext-RPC-Port`, spun out in
 For cross-run/cross-device aggregation and baseline chart generation, see:
 
 - [`README-comparison-dataset.md`](./README-comparison-dataset.md)
+- [`docs/result-schema-conventions.md`](./docs/result-schema-conventions.md) -- what
+  `proportion`/`resultScale`/`testVersion`/etc. mean and where they're declared
+  (`apps.json`, `metric-definitions.json`)
 
 ## Configure devices
 

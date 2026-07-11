@@ -89,6 +89,60 @@ function Normalize-AppsMetadata {
     return $normalized
 }
 
+function Get-MetricDefinitions {
+    # Loads the declarative metric-metadata file (proportion/scale/quantifier), modeled on the
+    # Phoronix Test Suite test-profile schema's HIB/LIB/ABSTRACT vocabulary -- see
+    # docs/result-schema-conventions.md. Returns an ordered list of {Pattern, Label, ResultScale,
+    # Proportion, ResultQuantifier} so callers can pattern-match a metric_name against it.
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    if (-not (Test-Path -LiteralPath $Path)) {
+        return @()
+    }
+
+    $raw = Read-JsonFileSafe -Path $Path
+    if (-not $raw -or -not $raw.PSObject.Properties['definitions']) {
+        return @()
+    }
+
+    return @($raw.definitions | ForEach-Object {
+        [pscustomobject]@{
+            Pattern          = [string]$_.pattern
+            Label            = [string](Get-PropertyValue -Object $_ -Name 'label')
+            ResultScale      = [string](Get-PropertyValue -Object $_ -Name 'resultScale')
+            Proportion       = [string](Get-PropertyValue -Object $_ -Name 'proportion')
+            ResultQuantifier = [string](Get-PropertyValue -Object $_ -Name 'resultQuantifier')
+        }
+    })
+}
+
+function Resolve-MetricMetadata {
+    # First-match-wins regex lookup against metric_name. Unmatched metrics (e.g. a new sysfs
+    # column not yet catalogued) fall back to ABSTRACT/unknown rather than erroring, so this
+    # never blocks dataset generation -- it's an enrichment, not a validation gate.
+    param(
+        [Parameter(Mandatory = $true)][string]$MetricName,
+        [Parameter(Mandatory = $true)][object[]]$Definitions
+    )
+
+    foreach ($def in $Definitions) {
+        if ([string]::IsNullOrWhiteSpace($def.Pattern)) {
+            continue
+        }
+        if ($MetricName -match $def.Pattern) {
+            return $def
+        }
+    }
+
+    return [pscustomobject]@{
+        Pattern          = $null
+        Label            = $MetricName
+        ResultScale      = 'unknown'
+        Proportion       = 'ABSTRACT'
+        ResultQuantifier = 'AVG'
+    }
+}
+
 function Get-CsvHeaderFromSiblingTelemetry {
     # cooldown.csv is written by the same telemetry-monitor.sh header logic as telemetry.csv
     # for a given app/device, so a sibling telemetry.csv in the same folder is a reliable
@@ -174,6 +228,9 @@ if (-not (Test-Path -LiteralPath $resolvedResultsRoot)) {
     throw "Results root not found: $resolvedResultsRoot"
 }
 
+$metricDefinitionsPath = Resolve-SuitePath -Path '.\metric-definitions.json'
+$metricDefinitions = Get-MetricDefinitions -Path $metricDefinitionsPath
+
 $runDirs = @(
     Get-ChildItem -LiteralPath $resolvedResultsRoot -Recurse -File -Filter 'device-info.json' |
         ForEach-Object { $_.Directory.FullName } |
@@ -240,6 +297,11 @@ foreach ($runDir in $runDirs) {
             app_package      = if ($appMeta) { [string](Get-PropertyValue -Object $appMeta -Name 'package') } else { '' }
             app_type         = if ($appMeta) { [string](Get-PropertyValue -Object $appMeta -Name 'type') } else { '' }
             duration_sec     = $durationSec
+            # Semantic test-versioning convention borrowed from PTS (see
+            # docs/result-schema-conventions.md): a changed test_version means results from
+            # before/after should not be directly compared. Empty when apps.json predates this
+            # field or app-metadata.json wasn't captured with it.
+            test_version     = if ($appMeta) { [string](Get-PropertyValue -Object $appMeta -Name 'testVersion') } else { '' }
         }
 
         foreach ($phaseInfo in @(
@@ -248,6 +310,7 @@ foreach ($runDir in $runDirs) {
         )) {
             $stats = Get-CsvMetricStats -CsvPath $phaseInfo.path
             foreach ($metric in $stats) {
+                $metricMeta = Resolve-MetricMetadata -MetricName $metric.metric_name -Definitions $metricDefinitions
                 $datasetRows.Add([pscustomobject]@{
                     run_id            = $commonFields.run_id
                     run_timestamp     = $commonFields.run_timestamp
@@ -260,12 +323,19 @@ foreach ($runDir in $runDirs) {
                     app_package       = $commonFields.app_package
                     app_type          = $commonFields.app_type
                     duration_sec      = $commonFields.duration_sec
+                    test_version      = $commonFields.test_version
                     phase             = $phaseInfo.phase
                     metric_name       = $metric.metric_name
                     min               = $metric.min
                     max               = $metric.max
                     avg               = $metric.avg
                     sample_count      = $metric.sample_count
+                    # Enrichment columns from metric-definitions.json (PTS-style HIB/LIB/ABSTRACT
+                    # vocabulary) -- unmatched metrics fall back to ABSTRACT/unknown rather than
+                    # failing, so this never blocks dataset generation.
+                    proportion        = $metricMeta.Proportion
+                    result_scale      = $metricMeta.ResultScale
+                    result_quantifier = $metricMeta.ResultQuantifier
                 })
             }
         }
@@ -282,7 +352,7 @@ $jsonPath = Join-Path $resolvedResultsRoot 'comparison-dataset.json'
 
 # The comparison dataset is a derived/regenerable view. Each run rebuilds both files from
 # source-of-truth result folders instead of incrementally mutating prior dataset artifacts.
-$header = 'run_id,run_timestamp,device_name,adb_serial,product_model,android_release,build_fingerprint,app_name,app_package,app_type,duration_sec,phase,metric_name,min,max,avg,sample_count'
+$header = 'run_id,run_timestamp,device_name,adb_serial,product_model,android_release,build_fingerprint,app_name,app_package,app_type,duration_sec,test_version,phase,metric_name,min,max,avg,sample_count,proportion,result_scale,result_quantifier'
 if ($orderedRows.Count -eq 0) {
     Write-Utf8NoBomFile -Path $csvPath -Content ($header + "`r`n")
     Write-Utf8NoBomFile -Path $jsonPath -Content "[]`r`n"
