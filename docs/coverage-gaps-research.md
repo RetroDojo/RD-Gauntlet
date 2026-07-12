@@ -227,9 +227,12 @@ and VBI Skip notes (see prior GC section), and Dreamcast is purely blocked on RO
 
 Two comparison/upgrade opportunities also surfaced (lower priority, not blocking anything):
 - **Redream** (Play Store, `io.recompiled.redream`) as a standalone alternative to Flycast for
-  Dreamcast — community now prefers it, has auto-frameskip.
+  Dreamcast — community now prefers it, has auto-frameskip. **UPDATE 2026-07-11**: prepped as an
+  `apps.json` entry (see below) so it's ready to install/test as soon as Dreamcast ROM content is
+  available; not yet live-tested on any device.
 - **DuckStation** (Play Store, `com.github.stenzek.duckstation`) as a standalone alternative to
-  RetroArch/PCSX ReARMed for PS1 — better enhancements (PGXP, upscaling).
+  RetroArch/PCSX ReARMed for PS1 — better enhancements (PGXP, upscaling). **UPDATE 2026-07-11**:
+  same — prepped as an `apps.json` entry, not yet live-tested.
 
 ### Legal/distribution notes
 
