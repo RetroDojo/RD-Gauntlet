@@ -4,3 +4,4 @@ results/
 dashboard/jobs.db
 dashboard/logs/
 dashboard/runtime/
+last-push-report.json

@@ -20,5 +20,16 @@
     "perfettoDurationSec": 15,
     "captureStorageSpeed": false,
     "captureWifiThroughput": false
+  },
+  {
+    "name": "Odin2EX",
+    "adbSerial": "97b7c783",
+    "notes": "AYN Odin 2 EX, Qualcomm QCS8550 (kalama, Snapdragon 8 Gen 2 class -- ties Retroid Nova as joint highest-end device in the fleet, per docs/coverage-gaps-research.md section 7). Android 13, stock AYN firmware. Confirmed via adb getprop 2026-07-12: ro.product.model=Odin2EX, ro.product.manufacturer=AYN, ro.soc.model=QCS8550. GPU via kgsl-3d0/gpu_busy_percentage (Adreno, same path as other Qualcomm devices), battery via power_supply/battery/capacity -- both confirmed live. Primary target device for the new-emulator todos (Saturn/RetroArch Beetle, Vita3K, Switch/Eden, Xbox 360, PS3) that require SD 8 Gen 2-class hardware.",
+    "checkStickDrift": false,
+    "sampleHaptics": false,
+    "capturePerfetto": false,
+    "perfettoDurationSec": 15,
+    "captureStorageSpeed": false,
+    "captureWifiThroughput": false
   }
 ]

@@ -192,6 +192,9 @@ function Get-BiosFilesForSystem {
         'gc' {
             return @($allFiles | Where-Object { $_.Name -match '(?i)^IPL\.bin$' })
         }
+        'saturn' {
+            return @($allFiles | Where-Object { $_.Name -match '(?i)^(sega_101|saturn_bios|mpr-17933)\.bin$' })
+        }
         default {
             return @()
         }
@@ -234,6 +237,8 @@ $defaultTargetBySystem = @{
     'n64' = '/storage/emulated/0/ROMs/n64'
     'psp' = '/storage/emulated/0/ROMs/psp'
     'dreamcast' = '/storage/emulated/0/ROMs/dreamcast'
+    'ps1' = '/storage/emulated/0/ROMs/psx'
+    'saturn' = '/storage/emulated/0/ROMs/saturn'
 }
 
 $results = New-Object System.Collections.Generic.List[object]
@@ -286,12 +291,13 @@ foreach ($entry in $entries) {
     $results.Add([pscustomobject]@{ name = $name; system = $system; status = if ($DryRun) { 'dry_run' } else { 'pushed' }; localPath = $localPath; remotePath = $remotePath })
 }
 
-$biosSystems = @('ps1', 'ps2', 'gc', 'dreamcast')
+$biosSystems = @('ps1', 'ps2', 'gc', 'dreamcast', 'saturn')
 $biosTargetDirs = @{
-    'ps1' = @('/storage/emulated/0/ROMs/bios/ps1', '/storage/emulated/0/RetroArch/system')
+    'ps1' = @('/storage/emulated/0/ROMs/bios/ps1', '/storage/emulated/0/RetroArch/system', '/storage/emulated/0/Android/data/com.github.stenzek.duckstation/files/bios')
     'ps2' = @('/storage/emulated/0/ROMs/bios/ps2')
     'gc' = @('/storage/emulated/0/ROMs/bios/gc')
     'dreamcast' = @('/storage/emulated/0/ROMs/bios/dreamcast', '/storage/emulated/0/RetroArch/system')
+    'saturn' = @('/storage/emulated/0/ROMs/bios/saturn', '/storage/emulated/0/RetroArch/system')
 }
 
 foreach ($biosSystem in $biosSystems) {

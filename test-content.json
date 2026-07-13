@@ -166,5 +166,68 @@
     "emulator": "PPSSPP",
     "romPath": "D:\\ROMS\\psp\\Tekken 6 (Europe) (En,Fr,De,Es,It,Ru).zip",
     "devicePath": "/storage/emulated/0/ROMs/psp/Tekken6.zip"
+  },
+  {
+    "name": "Tekken 3",
+    "system": "ps1",
+    "emulator": "RetroArch (PCSX ReARMed) / DuckStation",
+    "romPath": "D:\\ROMS\\psx\\Tekken 3.PBP",
+    "devicePath": "/storage/emulated/0/ROMs/psx/Tekken3.pbp"
+  },
+  {
+    "name": "Ridge Racer Type 4",
+    "system": "ps1",
+    "emulator": "RetroArch (PCSX ReARMed) / DuckStation",
+    "romPath": "D:\\ROMS\\psx\\Ridge Racer Type 4.PBP",
+    "devicePath": "/storage/emulated/0/ROMs/psx/RidgeRacerType4.pbp"
+  },
+  {
+    "name": "Crash Team Racing",
+    "system": "ps1",
+    "emulator": "RetroArch (PCSX ReARMed) / DuckStation",
+    "romPath": "D:\\ROMS\\psx\\Crash Team Racing.PBP",
+    "devicePath": "/storage/emulated/0/ROMs/psx/CrashTeamRacing.pbp"
+  },
+  {
+    "name": "Sonic Adventure 2",
+    "system": "dreamcast",
+    "emulator": "Flycast",
+    "romPath": "D:\\ROMS\\dc\\Sonic Adventure 2 (USA) (En,Ja,Fr,De,Es).zip",
+    "devicePath": "/storage/emulated/0/ROMs/dreamcast/SonicAdventure2.zip"
+  },
+  {
+    "name": "Soulcalibur",
+    "system": "dreamcast",
+    "emulator": "Flycast",
+    "romPath": "D:\\ROMS\\dc\\Soulcalibur (USA).zip",
+    "devicePath": "/storage/emulated/0/ROMs/dreamcast/Soulcalibur.zip"
+  },
+  {
+    "name": "Crazy Taxi",
+    "system": "dreamcast",
+    "emulator": "Flycast",
+    "romPath": "D:\\ROMS\\dc\\Crazy Taxi (USA).zip",
+    "devicePath": "/storage/emulated/0/ROMs/dreamcast/CrazyTaxi.zip"
+  },
+  {
+    "name": "Virtua Fighter 2",
+    "system": "saturn",
+    "emulator": "RetroArch (Beetle Saturn) / Yaba Sanshiro 2 Pro",
+    "romPath": "D:\\ROMS\\ss\\Virtua Fighter 2 (USA).zip",
+    "devicePath": "/storage/emulated/0/ROMs/saturn/VirtuaFighter2.zip"
+  },
+  {
+    "name": "Daytona USA",
+    "system": "saturn",
+    "emulator": "RetroArch (Beetle Saturn) / Yaba Sanshiro 2 Pro",
+    "romPath": "D:\\ROMS\\ss\\Daytona USA (USA).chd",
+    "devicePath": "/storage/emulated/0/ROMs/saturn/DaytonaUSA.chd"
+  },
+  {
+    "name": "Panzer Dragoon",
+    "system": "saturn",
+    "emulator": "RetroArch (Beetle Saturn) / Yaba Sanshiro 2 Pro",
+    "romPath": "D:\\ROMS\\ss\\Panzer Dragoon (USA) (5S).zip",
+    "devicePath": "/storage/emulated/0/ROMs/saturn/PanzerDragoon.zip"
   }
 ]

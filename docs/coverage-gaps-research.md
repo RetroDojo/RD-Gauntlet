@@ -365,6 +365,69 @@ open questions:
   OS: **Android 13**.
 - **Result: the Nova ties the Odin 2 Base at the top performance tier — it is NOT a
   naming-trap downgrade** the way RPF2 turned out to be. Odin 2 Base is **no longer the
+  highest-end device in the fleet — Odin 2 EX (see section 8) and Nova now tie at the top.**
+
+---
+
+## 8) Odin 2 EX onboarded live; PS1/Dreamcast/Saturn content pushed — 2026-07-12
+
+**Status: device registered, apps installed, content pushed. Visual/in-app validation still pending (blocked on physical device access).**
+
+The device the user has in-hand and referred to as "Odin 2 Base" identifies itself via
+`adb getprop` as **AYN Odin 2 EX** (`ro.product.model=Odin2EX`, `ro.product.manufacturer=AYN`,
+`ro.soc.model=QCS8550`, `ro.board.platform=kalama`, Android 13). Registered in `devices.json` as
+`Odin2EX`, ADB serial `97b7c783`. GPU busy-% (`kgsl-3d0/gpu_busy_percentage`), thermal zones, and
+battery capacity all confirmed reporting correctly — standard Qualcomm/Adreno telemetry path, same
+as the fleet's other Qualcomm devices. Treat "Odin 2 Base" in any earlier note in this doc as this
+same QCS8550 hardware tier unless a genuinely distinct "Odin 2 Base" SKU is confirmed to exist.
+
+**Installed (scripted):**
+- **Obtainium** (`dev.imranr.obtainium.fdroid`) — installed via direct APK download + `adb install`
+  from the GitHub release (v1.6.4). Used to import the 53-app RJNY Obtainium Emulation Pack
+  (`files/obtainium-emulation-pack.json`, session-persistent, not a repo file) via its file-import
+  feature — required one manual tap (Android's file picker needs user consent, not scriptable).
+- **RetroArch** (`com.retroarch.aarch64`) — nightly build, direct APK from
+  `buildbot.libretro.com/nightly/android/RetroArch_aarch64.apk`, installed via `adb install`.
+- **DuckStation** (`com.github.stenzek.duckstation`) and **Flycast** (`com.flycast.emulator`) —
+  both already tracked via the Obtainium import; user tapped Install on just these two (declined
+  bulk-installing all 53 tracked apps, reasonably).
+- All three confirmed launchable via `adb shell monkey ... ` + `dumpsys activity activities |
+  grep topResumedActivity`.
+- **NOT installed**: Redream (`io.recompiled.redream`) and Yaba Sanshiro 2 Pro
+  (`org.devmiyax.yabasanshioro2.pro`) — both Play Store-only, not present in the Obtainium pack,
+  not scriptable via ADB. Still open items.
+
+**Content pushed (scripted, `Push-TestContent.ps1 -DeviceName Odin2EX -Systems ps1,dreamcast,saturn`):**
+- Added `ps1` and `saturn` to `Push-TestContent.ps1`'s `$defaultTargetBySystem`,
+  `$biosSystems`/`$biosTargetDirs`, and `Get-BiosFilesForSystem` (new regex case matching
+  `sega_101.bin`/`saturn_bios.bin`/`mpr-17933.bin`) — these systems weren't wired into the push
+  script at all before today.
+- Added 9 new `test-content.json` entries (3 each for PS1/Dreamcast/Saturn) pointing at real files
+  confirmed present in `D:\ROMS\psx`, `D:\ROMS\dc`, `D:\ROMS\ss`.
+- All 9 ROMs + PS1 BIOS (6 files) + Saturn BIOS (3 of 6 available files matched by the new regex)
+  verified present on-device via `adb shell ls -la`, byte-for-byte size match against source.
+- Also manually downloaded and pushed RetroArch's **Beetle Saturn**
+  (`mednafen_saturn_libretro_android.so`) and **PCSX ReARMed** (`pcsx_rearmed_libretro_android.so`)
+  cores directly from `buildbot.libretro.com/nightly/android/latest/arm64-v8a/` to
+  `/storage/emulated/0/RetroArch/cores/` — this sidesteps RetroArch's in-app Online Updater menu,
+  which otherwise needs manual/monkey UI navigation to download cores.
+
+**What's still unverified (needs the device unlocked/in-hand, not scriptable further from here):**
+1. Whether RetroArch's Load Core / core list actually recognizes the two manually-pushed core
+   files — a screenshot check was attempted but blocked by the device's PIN-protected lock screen
+   after a screen-timeout mid-session; declined to attempt any lock-screen bypass.
+2. DuckStation's first launch opened `SetupWizardActivity`, not `MainActivity` — its one-time setup
+   (BIOS folder selection, etc.) has not been completed. The BIOS path
+   `Push-TestContent.ps1` pushes PS1 BIOS to for DuckStation
+   (`/storage/emulated/0/Android/data/com.github.stenzek.duckstation/files/bios`) is an **assumption**,
+   not confirmed — DuckStation may use a scoped-storage folder picker instead, in which case this
+   push target is silently unused until pointed at manually in-app.
+3. No title has actually been loaded/booted yet in any of the three emulators — content presence and
+   app installation are confirmed, but the full "does it actually play" check is not done.
+
+See `test-content-matrix.md` for the per-system content table and the same 2026-07-12 detail section.
+Todos `reconsider-ps1-duckstation`, `reconsider-dreamcast-redream`, and `setup-saturn` all updated
+with this progress and their specific remaining blockers.
   sole highest-end device** in this device set; it's now a two-way tie with the Nova.
 - ADB: expected to work unrestricted (every prior Retroid Pocket Android device has),
   but this is an inference from OS + historical pattern, not yet hands-on confirmed —
