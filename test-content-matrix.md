@@ -17,10 +17,12 @@ This matrix references **user-owned local ROMs only** under `D:\ROMS\...` (exter
 | PS1 | RetroArch (PCSX ReARMed) / DuckStation | `D:\ROMS\psx\Tekken 3.PBP`<br>`D:\ROMS\psx\Ridge Racer Type 4.PBP`<br>`D:\ROMS\psx\Crash Team Racing.PBP` | Fighting/racing mix with heavy transparency and full-screen effects; comparison set for `reconsider-ps1-duckstation` todo. |
 | Dreamcast | Flycast | `D:\ROMS\dc\Sonic Adventure 2 (USA) (En,Ja,Fr,De,Es).zip`<br>`D:\ROMS\dc\Soulcalibur (USA).zip`<br>`D:\ROMS\dc\Crazy Taxi (USA).zip` | Well-known heavy-load DC titles (open-world, high-poly fighting, dense city streaming); Redream comparison pending its install (Play Store only). |
 | Saturn | RetroArch (Beetle Saturn) / Yaba Sanshiro 2 Pro | `D:\ROMS\ss\Virtua Fighter 2 (USA).zip`<br>`D:\ROMS\ss\Daytona USA (USA).chd`<br>`D:\ROMS\ss\Panzer Dragoon (USA) (5S).zip` | Classic Saturn 3D workloads (quads/transparency-heavy); dual-approach test per `setup-saturn` todo. |
+| PS2 | AetherSX2 | `D:\ROMS\ps2\Simpsons, The - Hit  Run (USA)1.7z`<br>`D:\ROMS\ps2\Need for Speed - Underground (USA)1.7z` | Open-world/racing mix; GoW skipped for now (large single title, ~8.5GB uncompressed). |
 
 ## Blocked right now
 
-- **PS2/GameCube remain blocked by missing standalone emulator apps** on-device (no AetherSX2/NetherSX2, no Dolphin APK). BIOS is available, but emulator app availability is the remaining blocker for these two systems.
+- GameCube remains blocked by missing standalone emulator app (no Dolphin APK confirmed yet on Odin2EX). BIOS is available.
+- Dreamcast BIOS is genuinely absent from `D:\bios\` (see 2026-07-13 note below) -- Flycast/Redream may still run selected titles BIOS-free.
 - All other previously-tracked systems above (NES through PSP) are RG476H-specific findings from an earlier session and have not yet been re-validated on Odin2EX.
 
 ## BIOS source convention (flat folder)
@@ -85,3 +87,50 @@ before its `MainActivity` is reachable) -- not yet completed.
    setup wizard is reachable; DuckStation may use scoped-storage folder picker instead, in which case
    `Push-TestContent.ps1`'s guess won't be picked up automatically and the BIOS path will need to be
    set manually in-app.
+
+### 2026-07-13: PS2 onboarded via AetherSX2; Dreamcast BIOS gap confirmed
+
+User fixed DuckStation's setup wizard and manually installed **Redream** and **Yaba Sanshiro 2 Pro**
+(both Play Store-only, not scriptable). User also confirmed PS2 emulators were already installed --
+found to be **AetherSX2** (`xyz.aethersx2.android`) plus its Turnip GPU driver variant
+(`xyz.aethersx2.tturnip`).
+
+**Dreamcast BIOS gap confirmed as real, not a script bug**: re-checked `D:\bios\` in full -- there
+are genuinely no files matching any Dreamcast BIOS naming convention (`dc_boot.bin`, `dc_flash.bin`,
+`dc_nvmem.bin`, or common alternates). This isn't something `Push-TestContent.ps1` missed; the
+source files don't exist in the user's flat BIOS folder. Flycast can boot many Dreamcast titles
+BIOS-free (HLE BIOS mode), so the 3 selected DC titles may still be testable without it, but full
+BIOS-accurate comparisons (and any title that hard-requires it) remain blocked until BIOS is sourced.
+
+**PS2 content pushed and BIOS wired in:**
+- Launched AetherSX2 once via `adb shell monkey` to trigger its app-data folder creation, confirming
+  the exact on-device layout: `/storage/emulated/0/Android/data/xyz.aethersx2.android/files/{bios,games,...}`.
+- Pushed all 5 available PS2 BIOS files directly to `.../files/bios/`: `ps2-0200a-20040614.bin`,
+  `ps2-0200e-20040614.bin`, `ps2-0200j-20040614.bin`, `ps2-0230a-20080220.bin`, `SCPH-70012.bin`.
+- Found `D:\ROMS\ps2\` contains 3 titles: `God of War (USA).7z` (~7.1GB compressed / ~8.5GB
+  uncompressed ISO), `Need for Speed - Underground (USA)1.7z` (~1.9GB / ~2.7GB ISO), `Simpsons, The -
+  Hit  Run (USA)1.7z` (~694MB / ~2.15GB ISO). Each archive contains a single `.iso`.
+- Extracted **Simpsons: Hit & Run** and **NFS: Underground** locally (7-Zip) and pushed the raw ISOs
+  directly to `.../files/games/` (confirmed via `adb shell ls`, byte-for-byte match). **God of War
+  was skipped** for now -- its 8.5GB uncompressed size makes it a much longer extract/push/test cycle
+  and a single title doesn't add much to a 2-title comparison set; can be added later if wanted.
+- Added both titles to `test-content.json` (system `ps2`, emulator `AetherSX2`) -- note their
+  `devicePath` points at AetherSX2's own app-data games folder (not a shared `/ROMs/ps2/` path,
+  since AetherSX2 uses per-app scoped storage rather than a shared ROMs convention like RetroArch).
+  These 2 entries were pushed manually this round, not yet via `Push-TestContent.ps1` (which has no
+  `ps2` ROM target or 7z-extraction logic yet -- would need both added if this is to be repeatable
+  for future devices).
+- `D:\ROMS\` was also found to contain `wii\` (1 title, Super Smash Bros. Brawl -- Dolphin already
+  validated in an earlier session per checkpoint history) and `xbox\` (original Xbox, 1 title +
+  emulator files zip) folders that exist but are outside current scope -- noted for awareness only,
+  no action taken.
+
+**Still open before a full PS2/DC comparison run:**
+1. Device was locked (`mCurrentFocus=NotificationShade`) at time of push -- RetroArch's core
+   recognition (Beetle Saturn/PCSX ReARMed) and actual title-boot across all emulators still needs
+   in-person visual confirmation now that the user has the device in-hand.
+2. Dreamcast BIOS: source correctly-named files (`dc_boot.bin`/`dc_flash.bin`) if BIOS-accurate
+   testing is wanted, or accept Flycast/Redream's BIOS-free HLE mode for the 3 selected titles.
+3. God of War (PS2) intentionally not yet onboarded -- revisit if a 3rd PS2 title is wanted.
+4. `Push-TestContent.ps1` doesn't yet have `ps2` automation (ROM target dir + 7z extraction) --
+   this round's PS2 push was done manually outside the script.

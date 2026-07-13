@@ -229,5 +229,19 @@
     "emulator": "RetroArch (Beetle Saturn) / Yaba Sanshiro 2 Pro",
     "romPath": "D:\\ROMS\\ss\\Panzer Dragoon (USA) (5S).zip",
     "devicePath": "/storage/emulated/0/ROMs/saturn/PanzerDragoon.zip"
+  },
+  {
+    "name": "The Simpsons: Hit & Run",
+    "system": "ps2",
+    "emulator": "AetherSX2",
+    "romPath": "D:\\ROMS\\ps2\\Simpsons, The - Hit  Run (USA)1.7z",
+    "devicePath": "/storage/emulated/0/Android/data/xyz.aethersx2.android/files/games/Simpsons, The - Hit & Run (USA).iso"
+  },
+  {
+    "name": "Need for Speed: Underground",
+    "system": "ps2",
+    "emulator": "AetherSX2",
+    "romPath": "D:\\ROMS\\ps2\\Need for Speed - Underground (USA)1.7z",
+    "devicePath": "/storage/emulated/0/Android/data/xyz.aethersx2.android/files/games/Need for Speed - Underground (USA).iso"
   }
 ]
