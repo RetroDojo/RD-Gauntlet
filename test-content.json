@@ -193,21 +193,24 @@
     "system": "dreamcast",
     "emulator": "Flycast",
     "romPath": "D:\\ROMS\\dc\\Sonic Adventure 2 (USA) (En,Ja,Fr,De,Es).zip",
-    "devicePath": "/storage/emulated/0/ROMs/dreamcast/SonicAdventure2.zip"
+    "devicePath": "/storage/emulated/0/ROMs/dreamcast/Sonic Adventure 2 (USA) (En,Ja,Fr,De,Es).cue",
+    "note": "Pushed as loose BIN/CUE (not zip) - Flycast's cue_parse() cannot resolve sibling .bin tracks from inside a zip archive"
   },
   {
     "name": "Soulcalibur",
     "system": "dreamcast",
     "emulator": "Flycast",
     "romPath": "D:\\ROMS\\dc\\Soulcalibur (USA).zip",
-    "devicePath": "/storage/emulated/0/ROMs/dreamcast/Soulcalibur.zip"
+    "devicePath": "/storage/emulated/0/ROMs/dreamcast/Soulcalibur (USA).cue",
+    "note": "Pushed as loose BIN/CUE (not zip) - Flycast's cue_parse() cannot resolve sibling .bin tracks from inside a zip archive"
   },
   {
     "name": "Crazy Taxi",
     "system": "dreamcast",
     "emulator": "Flycast",
     "romPath": "D:\\ROMS\\dc\\Crazy Taxi (USA).zip",
-    "devicePath": "/storage/emulated/0/ROMs/dreamcast/CrazyTaxi.zip"
+    "devicePath": "/storage/emulated/0/ROMs/dreamcast/Crazy Taxi (USA).cue",
+    "note": "Pushed as loose BIN/CUE (not zip) - Flycast's cue_parse() cannot resolve sibling .bin tracks from inside a zip archive"
   },
   {
     "name": "Virtua Fighter 2",

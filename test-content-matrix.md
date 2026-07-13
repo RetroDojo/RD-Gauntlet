@@ -195,3 +195,48 @@ expect.
    Saturn and PCSX ReARMed.
 4. Once above 3 are resolved, all PS1/PS2/Saturn/Dreamcast content and BIOS should be fully ready for
    actual benchmark runs.
+
+### 2026-07-13 (part 3): Root-caused and fixed Flycast's empty Dreamcast game list
+
+User confirmed they'd already granted Flycast the folder permission manually (the one step that
+can't be scripted), but the game list stayed empty regardless -- meaning the blocker wasn't the SAF
+grant. Fetched Flycast's actual source (`core/imgread/cue.cpp`, `core/imgread/common.cpp` from
+`github.com/flyinghead/flycast`) to find the real cause:
+
+- Flycast's `cue_parse()` requires the `.cue` file **and its referenced `.bin` tracks to exist as
+  real loose files on disk** -- it resolves sibling `.bin` paths via `getParentPath(file)`, which
+  cannot work when the `.cue`/`.bin` set is bundled inside a ZIP archive (no real parent filesystem
+  path to resolve from inside a zip stream).
+- Our 3 Dreamcast titles (Sonic Adventure 2, Soulcalibur, Crazy Taxi) are all multi-track BIN/CUE
+  dumps (3 `.bin` tracks + 1 `.cue` each) -- the standard Redump/No-Intro packaging -- so **zipped
+  multi-track BIN/CUE Dreamcast content is fundamentally incompatible with Flycast on Android**,
+  independent of folder permissions. Single-file formats (`.chd`, `.gdi`, `.cdi`) are unaffected by
+  this and work fine zipped.
+- Considered converting to `.chd` (Flycast's natively-preferred, much smaller format via
+  `chd_parse`) but could not find a standalone Windows `chdman.exe` build -- MAME's official GitHub
+  releases only ship the ROM XML database or full multi-hundred-MB MAME installers, not a standalone
+  tools package. Deprioritized as a future improvement, not blocking.
+
+**Fix applied:** extracted all 3 DC zips locally to loose `.bin`/`.cue` files, verified each `.cue`'s
+`FILE "..."` references match the extracted filenames exactly (no renaming needed), removed the old
+zips from `/storage/emulated/0/ROMs/dreamcast/` on-device, and pushed the loose files in their place
+(~1.9GB total). Cleaned up 3 stray empty leftover subfolders from an earlier failed `mkdir -p`
+attempt (device shell choked on literal parentheses in ROM titles like `(USA)` even when
+double-quoted from PowerShell -- fixed by wrapping the path in single quotes inside the adb shell
+arg instead: `adb shell "rmdir '/path/with (parens)'"`).
+
+Updated `test-content.json`'s 3 Dreamcast entries' `devicePath` to point at the new loose `.cue`
+files (e.g. `/storage/emulated/0/ROMs/dreamcast/Crazy Taxi (USA).cue`) instead of the stale zip
+paths, with a `note` field documenting why.
+
+Redream is explicitly out of scope per the user ("skip redream") -- no further action planned there.
+
+**Still needs a live check:** relaunching Flycast via ADB and re-screenshotting still showed an
+empty list, but this may just be an app-side rescan-on-launch quirk (Flycast's SAF game-list scan
+may only trigger on the in-app "Rescan Content" button or a fresh "Add Game Folder" tap, not simply
+on process relaunch). ADB touch input into Flycast's UI is unreliable right now -- its screenshots
+render at 1920x1080 (forced landscape) while the device's physical panel is 1080x1920 portrait with
+`mDisplayRotation=ROTATION_0`, so tap coordinates read off a screenshot don't map 1:1 to physical
+touch coordinates. **Next step: user should reopen Flycast in person and tap "Rescan Content" (or
+just relaunch) to confirm the 3 titles now show up** -- the underlying files are confirmed correct
+and in place on-device either way.
