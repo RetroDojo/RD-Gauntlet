@@ -187,6 +187,12 @@ function Get-BiosFilesForSystem {
             return @($allFiles | Where-Object { $_.Name -match '(?i)^ps2-.*\.bin$|^SCPH-\d+\.bin$' })
         }
         'dreamcast' {
+            # Dreamcast BIOS lives in a 'dc' subfolder under the flat BIOS root, not at the flat root itself.
+            $dcSubfolder = Join-Path $FlatBiosRoot 'dc'
+            if (Test-Path -LiteralPath $dcSubfolder) {
+                $dcFiles = @(Get-ChildItem -LiteralPath $dcSubfolder -File -ErrorAction SilentlyContinue)
+                return @($dcFiles | Where-Object { $_.Name -match '(?i)^dc_(boot|flash|nvmem)\.bin$' })
+            }
             return @($allFiles | Where-Object { $_.Name -match '(?i)^dc_(boot|flash|nvmem)\.bin$' })
         }
         'gc' {
@@ -239,6 +245,7 @@ $defaultTargetBySystem = @{
     'dreamcast' = '/storage/emulated/0/ROMs/dreamcast'
     'ps1' = '/storage/emulated/0/ROMs/psx'
     'saturn' = '/storage/emulated/0/ROMs/saturn'
+    'ps2' = '/storage/emulated/0/Android/data/xyz.aethersx2.android/files/games'
 }
 
 $results = New-Object System.Collections.Generic.List[object]
@@ -294,9 +301,9 @@ foreach ($entry in $entries) {
 $biosSystems = @('ps1', 'ps2', 'gc', 'dreamcast', 'saturn')
 $biosTargetDirs = @{
     'ps1' = @('/storage/emulated/0/ROMs/bios/ps1', '/storage/emulated/0/RetroArch/system', '/storage/emulated/0/Android/data/com.github.stenzek.duckstation/files/bios')
-    'ps2' = @('/storage/emulated/0/ROMs/bios/ps2')
+    'ps2' = @('/storage/emulated/0/ROMs/bios/ps2', '/storage/emulated/0/Android/data/xyz.aethersx2.android/files/bios')
     'gc' = @('/storage/emulated/0/ROMs/bios/gc')
-    'dreamcast' = @('/storage/emulated/0/ROMs/bios/dreamcast', '/storage/emulated/0/RetroArch/system')
+    'dreamcast' = @('/storage/emulated/0/ROMs/bios/dreamcast', '/storage/emulated/0/RetroArch/system', '/storage/emulated/0/Android/data/io.recompiled.redream/files')
     'saturn' = @('/storage/emulated/0/ROMs/bios/saturn', '/storage/emulated/0/RetroArch/system')
 }
 

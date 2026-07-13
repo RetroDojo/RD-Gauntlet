@@ -17,12 +17,11 @@ This matrix references **user-owned local ROMs only** under `D:\ROMS\...` (exter
 | PS1 | RetroArch (PCSX ReARMed) / DuckStation | `D:\ROMS\psx\Tekken 3.PBP`<br>`D:\ROMS\psx\Ridge Racer Type 4.PBP`<br>`D:\ROMS\psx\Crash Team Racing.PBP` | Fighting/racing mix with heavy transparency and full-screen effects; comparison set for `reconsider-ps1-duckstation` todo. |
 | Dreamcast | Flycast | `D:\ROMS\dc\Sonic Adventure 2 (USA) (En,Ja,Fr,De,Es).zip`<br>`D:\ROMS\dc\Soulcalibur (USA).zip`<br>`D:\ROMS\dc\Crazy Taxi (USA).zip` | Well-known heavy-load DC titles (open-world, high-poly fighting, dense city streaming); Redream comparison pending its install (Play Store only). |
 | Saturn | RetroArch (Beetle Saturn) / Yaba Sanshiro 2 Pro | `D:\ROMS\ss\Virtua Fighter 2 (USA).zip`<br>`D:\ROMS\ss\Daytona USA (USA).chd`<br>`D:\ROMS\ss\Panzer Dragoon (USA) (5S).zip` | Classic Saturn 3D workloads (quads/transparency-heavy); dual-approach test per `setup-saturn` todo. |
-| PS2 | AetherSX2 | `D:\ROMS\ps2\Simpsons, The - Hit  Run (USA)1.7z`<br>`D:\ROMS\ps2\Need for Speed - Underground (USA)1.7z` | Open-world/racing mix; GoW skipped for now (large single title, ~8.5GB uncompressed). |
+| PS2 | AetherSX2 | `D:\ROMS\ps2\Simpsons, The - Hit  Run (USA)1.7z`<br>`D:\ROMS\ps2\Need for Speed - Underground (USA)1.7z`<br>`D:\ROMS\ps2\God of War (USA).7z` | Open-world/racing/action mix; all 3 available titles onboarded. |
 
 ## Blocked right now
 
 - GameCube remains blocked by missing standalone emulator app (no Dolphin APK confirmed yet on Odin2EX). BIOS is available.
-- Dreamcast BIOS is genuinely absent from `D:\bios\` (see 2026-07-13 note below) -- Flycast/Redream may still run selected titles BIOS-free.
 - All other previously-tracked systems above (NES through PSP) are RG476H-specific findings from an earlier session and have not yet been re-validated on Odin2EX.
 
 ## BIOS source convention (flat folder)
@@ -134,3 +133,65 @@ BIOS-accurate comparisons (and any title that hard-requires it) remain blocked u
 3. God of War (PS2) intentionally not yet onboarded -- revisit if a 3rd PS2 title is wanted.
 4. `Push-TestContent.ps1` doesn't yet have `ps2` automation (ROM target dir + 7z extraction) --
    this round's PS2 push was done manually outside the script.
+
+### 2026-07-13 (part 2): Dreamcast BIOS found in D:\bios\dc\ subfolder; GoW added; live app checks
+
+Correction to the above: the Dreamcast BIOS was NOT actually missing -- it lives in a **`D:\bios\dc\`
+subfolder** (along with `awbios.zip`, `naomi.zip`, and other arcade-board BIOS files) that the original
+flat-folder scan didn't check (only top-level files were scanned, not subdirectories). Confirmed via
+byte-signature scan across all top-level files in `D:\bios` (no plaintext DC signature found there)
+followed by discovering the `dc\`, `dolphin-emu\`, `PPSSPP\`, `Mupen64plus\`, etc. subfolders that exist
+alongside the flat files. `dc_boot.bin` (2097152 bytes), `dc_flash.bin` (131072 bytes), and
+`dc_nvmem.bin` (131072 bytes) all confirmed present and correctly named -- exactly what Flycast/Redream
+expect.
+
+**Pushed and wired in:**
+- All 3 DC BIOS files pushed to `/storage/emulated/0/ROMs/bios/dreamcast/` (shared),
+  `/storage/emulated/0/RetroArch/system/` (RetroArch core), and
+  `/storage/emulated/0/Android/data/io.recompiled.redream/files/` (Redream's app-private root --
+  confirmed writable, unlike Flycast's nested `files/data/` subfolder which returned
+  `Permission denied` over ADB).
+- Confirmed via Flycast's own `emu.cfg` that it's already configured to read BIOS from the shared
+  `/storage/emulated/0/ROMs/bios` path via a granted SAF tree URI -- no app-private BIOS copy needed
+  for Flycast.
+- Updated `Push-TestContent.ps1`'s `Get-BiosFilesForSystem` to check the `dc\` subfolder under
+  `-BiosRoot` for Dreamcast specifically (falls back to flat-root matching if no subfolder exists),
+  and added Redream's app-data path to `$biosTargetDirs.dreamcast`.
+- Extracted and pushed **God of War** (the 3rd PS2 title, ~8.5GB uncompressed) to AetherSX2's games
+  folder -- added to `test-content.json`. All 3 PS2 titles now onboarded.
+- Added AetherSX2's own app-data BIOS folder
+  (`/storage/emulated/0/Android/data/xyz.aethersx2.android/files/bios`) to `$biosTargetDirs.ps2` and
+  added a `ps2` default ROM target dir (AetherSX2's games folder) to `Push-TestContent.ps1` for future
+  device onboarding (7z extraction is still a manual pre-step, not scripted).
+
+**Live in-app verification (device unlocked, screenshots taken):**
+- **DuckStation**: all 3 PS1 titles auto-recognized in its game list (filenames, sizes, region flags)
+  -- ready to test, no further setup needed.
+- **AetherSX2**: all 3 PS2 titles auto-recognized with compatibility star ratings -- ready to test.
+- **Flycast**: game list came up **empty** ("Your game list is empty / Add Game Folder") despite
+  `emu.cfg` already pointing at the correct SAF URI -- the scoped-storage grant likely needs to be
+  re-confirmed via the in-app folder picker (one manual tap, can't be scripted around). Not yet ready
+  to test until the user does this.
+- **Redream**: hit an **"Upgrade to Premium" gate** on first launch -- free tier is "Lite Mode" vs a
+  paid "Premium" unlock advertised as HD/full-speed. Tapping "Continue in Lite Mode" did not visibly
+  change screens across two attempts (possibly a touch-coordinate/rotation quirk, or the prompt
+  persists per-session) -- needs the user to manually get past this and confirm whether Lite Mode
+  meaningfully throttles performance (which would make it an unfair comparison point against Flycast
+  unless Premium is purchased).
+- **RetroArch**: Main Menu loads fine; attempted to navigate to "Load Core" via ADB touch/dpad input
+  to confirm Beetle Saturn/PCSX ReARMed show up in the core list, but menu navigation via
+  `adb shell input` wasn't reliably registering (RetroArch's Ozone UI may need a real controller/touch
+  gesture the emulated input doesn't replicate). The two core `.so` files are physically confirmed
+  present via `adb shell ls` on `/storage/emulated/0/RetroArch/cores/`, which is the important thing --
+  RetroArch auto-scans this folder, so they should appear next time the user opens "Load Core" in
+  person (10-second check).
+
+**Remaining before a full comparison run:**
+1. User needs to tap through Flycast's "Add Game Folder" once (SAF picker, needs consent) pointing at
+   `/storage/emulated/0/ROMs/dreamcast`.
+2. User needs to decide on Redream Premium vs Lite Mode for a fair DC comparison, and get past the
+   gate screen.
+3. User should do a quick 10-second in-person check that RetroArch's "Load Core" list shows Beetle
+   Saturn and PCSX ReARMed.
+4. Once above 3 are resolved, all PS1/PS2/Saturn/Dreamcast content and BIOS should be fully ready for
+   actual benchmark runs.

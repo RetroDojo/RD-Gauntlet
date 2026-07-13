@@ -243,5 +243,12 @@
     "emulator": "AetherSX2",
     "romPath": "D:\\ROMS\\ps2\\Need for Speed - Underground (USA)1.7z",
     "devicePath": "/storage/emulated/0/Android/data/xyz.aethersx2.android/files/games/Need for Speed - Underground (USA).iso"
+  },
+  {
+    "name": "God of War",
+    "system": "ps2",
+    "emulator": "AetherSX2",
+    "romPath": "D:\\ROMS\\ps2\\God of War (USA).7z",
+    "devicePath": "/storage/emulated/0/Android/data/xyz.aethersx2.android/files/games/God of War (USA).iso"
   }
 ]
