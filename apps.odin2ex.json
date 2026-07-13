@@ -1,0 +1,152 @@
+[
+  {
+    "name": "RetroArch-PS1",
+    "package": "com.retroarch.aarch64",
+    "type": "game",
+    "durationSec": 120,
+    "monkeyEnabled": true,
+    "monkeyPctTouch": 70,
+    "monkeyPctMotion": 20,
+    "capturePerfetto": false,
+    "perfettoDurationSec": 15,
+    "captureStorageSpeed": false,
+    "captureWifiThroughput": false,
+    "launchIntent": {
+      "action": "android.intent.action.MAIN",
+      "component": "com.retroarch.aarch64/com.retroarch.browser.mainmenu.MainMenuActivity",
+      "categories": [
+        "android.intent.category.LAUNCHER"
+      ]
+    },
+    "testVersion": "1.0.0",
+    "timesToRun": 1,
+    "ignoreRuns": [],
+    "resultQuantifier": "AVG",
+    "notes": "PCSX ReARMed core confirmed present at /storage/emulated/0/RetroArch/cores/pcsx_rearmed_libretro_android.so. ROMs staged: Tekken3.pbp, RidgeRacerType4.pbp, CrashTeamRacing.pbp under /storage/emulated/0/ROMs/psx/. Launcher-only intent -- no scriptable direct-ROM-load path confirmed on this build/device (Android 13 scoped storage). Run with -SkipMonkey and manually select Load Core > PCSX ReARMed > Load Content > pick a PS1 title, or let monkey drive the Main Menu UI for a coarse load-test."
+  },
+  {
+    "name": "RetroArch-Saturn",
+    "package": "com.retroarch.aarch64",
+    "type": "game",
+    "durationSec": 120,
+    "monkeyEnabled": true,
+    "monkeyPctTouch": 70,
+    "monkeyPctMotion": 20,
+    "capturePerfetto": false,
+    "perfettoDurationSec": 15,
+    "captureStorageSpeed": false,
+    "captureWifiThroughput": false,
+    "launchIntent": {
+      "action": "android.intent.action.MAIN",
+      "component": "com.retroarch.aarch64/com.retroarch.browser.mainmenu.MainMenuActivity",
+      "categories": [
+        "android.intent.category.LAUNCHER"
+      ]
+    },
+    "testVersion": "1.0.0",
+    "timesToRun": 1,
+    "ignoreRuns": [],
+    "resultQuantifier": "AVG",
+    "notes": "Beetle Saturn core confirmed present at /storage/emulated/0/RetroArch/cores/mednafen_saturn_libretro_android.so (needs Saturn BIOS sega_101.bin/mpr-17933.bin already pushed to RetroArch/system). ROMs staged: VirtuaFighter2.zip, DaytonaUSA.chd, PanzerDragoon.zip under /storage/emulated/0/ROMs/saturn/. Same RetroArch package/launcher as RetroArch-PS1 above -- duplicated as a separate apps.json entry only so report/telemetry rows are labeled distinctly per-core; running both back-to-back in the same suite invocation will just relaunch the same app twice. Run with -SkipMonkey and manually select Load Core > Beetle Saturn > Load Content > pick a Saturn title."
+  },
+  {
+    "name": "DuckStation",
+    "package": "com.github.stenzek.duckstation",
+    "type": "game",
+    "durationSec": 120,
+    "monkeyEnabled": true,
+    "monkeyPctTouch": 70,
+    "monkeyPctMotion": 20,
+    "capturePerfetto": false,
+    "perfettoDurationSec": 15,
+    "captureStorageSpeed": false,
+    "captureWifiThroughput": false,
+    "launchIntent": {
+      "action": "android.intent.action.MAIN",
+      "component": "com.github.stenzek.duckstation/.MainActivity",
+      "categories": [
+        "android.intent.category.LAUNCHER"
+      ]
+    },
+    "testVersion": "1.0.0",
+    "timesToRun": 1,
+    "ignoreRuns": [],
+    "resultQuantifier": "AVG",
+    "notes": "Live-installed and setup-wizard-completed on Odin2EX. Same 3 PS1 ROMs as RetroArch-PS1 (Tekken3.pbp, RidgeRacerType4.pbp, CrashTeamRacing.pbp) available for direct comparison against RetroArch/PCSX ReARMed on identical content. pm dump shows MainActivity as MAIN/LAUNCHER only -- no ACTION_VIEW handler, confirmed 2026-07-13 (also confirmed generally that Android 13 scoped storage blocks file:// VIEW intents from resolving real filesystem paths outside the app sandbox even when a handler exists, per the Flycast test below). Run with -SkipMonkey and manually pick a game from its auto-scanned library."
+  },
+  {
+    "name": "Flycast",
+    "package": "com.flycast.emulator",
+    "type": "game",
+    "durationSec": 120,
+    "monkeyEnabled": true,
+    "monkeyPctTouch": 70,
+    "monkeyPctMotion": 20,
+    "capturePerfetto": false,
+    "perfettoDurationSec": 15,
+    "captureStorageSpeed": false,
+    "captureWifiThroughput": false,
+    "launchIntent": {
+      "action": "android.intent.action.MAIN",
+      "component": "com.flycast.emulator/.MainActivity",
+      "categories": [
+        "android.intent.category.LAUNCHER"
+      ]
+    },
+    "testVersion": "1.0.0",
+    "timesToRun": 1,
+    "ignoreRuns": [],
+    "resultQuantifier": "AVG",
+    "notes": "Fixed 2026-07-13: zipped multi-track BIN/CUE Dreamcast dumps are incompatible with Flycast's cue_parse() (requires loose files); extracted and re-pushed loose .bin/.cue for all 3 titles (Crazy Taxi, Sonic Adventure 2, Soulcalibur), confirmed showing with box art in the in-app game grid. ALSO CONFIRMED 2026-07-13: even though Flycast's manifest exposes a file:// ACTION_VIEW handler (pm dump shows it, unlike DuckStation/AetherSX2/RetroArch), attempting `am start -a VIEW -d file:///.../Crazy Taxi (USA).cue` failed with a 'Cannot stat' runtime error -- Android 13 scoped storage blocks raw filesystem path access outside the app's own sandbox even when an intent filter exists; only the in-app SAF folder grant (content:// DocumentsProvider access) actually works. So despite having the most promising-looking manifest of any app tested, direct scriptable ROM launch is NOT achievable here either. Run with -SkipMonkey and manually tap a game tile from the grid."
+  },
+  {
+    "name": "NetherSX2-PS2",
+    "package": "xyz.aethersx2.android",
+    "type": "game",
+    "durationSec": 150,
+    "monkeyEnabled": true,
+    "monkeyPctTouch": 70,
+    "monkeyPctMotion": 20,
+    "capturePerfetto": false,
+    "perfettoDurationSec": 15,
+    "captureStorageSpeed": false,
+    "captureWifiThroughput": false,
+    "launchIntent": {
+      "action": "android.intent.action.MAIN",
+      "component": "xyz.aethersx2.android/.MainActivity",
+      "categories": [
+        "android.intent.category.LAUNCHER"
+      ]
+    },
+    "testVersion": "1.0.0",
+    "timesToRun": 1,
+    "ignoreRuns": [],
+    "resultQuantifier": "AVG",
+    "notes": "3 titles confirmed present and auto-recognized in-app with compatibility star ratings: 'The Simpsons: Hit & Run', 'Need for Speed: Underground', 'God of War' (all under Android/data/xyz.aethersx2.android/files/games/, BIOS imported via in-app SAF picker). Longer durationSec than other systems (150s) since PS2 titles typically need a longer boot-to-gameplay window. pm dump: MAIN/LAUNCHER only, no ACTION_VIEW handler. Run with -SkipMonkey and manually tap a game from the library (God of War recommended as the heaviest/most demanding stress title of the 3)."
+  },
+  {
+    "name": "YabaSanshiro2",
+    "package": "org.devmiyax.yabasanshioro2",
+    "type": "game",
+    "durationSec": 120,
+    "monkeyEnabled": true,
+    "monkeyPctTouch": 70,
+    "monkeyPctMotion": 20,
+    "capturePerfetto": false,
+    "perfettoDurationSec": 15,
+    "captureStorageSpeed": false,
+    "captureWifiThroughput": false,
+    "launchIntent": {
+      "action": "android.intent.action.MAIN",
+      "component": "org.devmiyax.yabasanshioro2/org.devmiyax.yabasanshiro.StartupActivity",
+      "categories": [
+        "android.intent.category.LAUNCHER"
+      ]
+    },
+    "testVersion": "1.0.0",
+    "timesToRun": 1,
+    "ignoreRuns": [],
+    "resultQuantifier": "AVG",
+    "notes": "Free Play Store build (org.devmiyax.yabasanshioro2, not the .pro package originally assumed in the backlog note -- confirmed via pm list packages 2026-07-13). Same 3 Saturn ROMs as RetroArch-Saturn (VirtuaFighter2.zip, DaytonaUSA.chd, PanzerDragoon.zip) for a direct Beetle-Saturn-vs-Yaba comparison on identical content. pm dump shows a second activity (org.uoyabause.android.Yabause) that declares both MAIN and VIEW actions -- worth a follow-up manifest check for a possible direct-launch path, but not yet confirmed; treat as launcher-only/manual-nav until verified. Run with -SkipMonkey and manually load a title."
+  }
+]

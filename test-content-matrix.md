@@ -240,3 +240,56 @@ render at 1920x1080 (forced landscape) while the device's physical panel is 1080
 touch coordinates. **Next step: user should reopen Flycast in person and tap "Rescan Content" (or
 just relaunch) to confirm the 3 titles now show up** -- the underlying files are confirmed correct
 and in place on-device either way.
+
+### 2026-07-13 (part 4): Flycast confirmed live; RetroArch nightly reinstall fixed input; built apps.odin2ex.json
+
+User confirmed Flycast now shows all 3 Dreamcast titles with correct box art after a rescan --
+re-screenshotted and verified directly (Crazy Taxi, Sonic Adventure 2, Soulcalibur all present,
+plus it also picked up `DaytonaUSA.chd` from the Saturn folder since Flycast scans multiple ROM
+dirs). Fix from part 3 fully validated.
+
+User separately uninstalled the old RetroArch install and updated to a fresh nightly build,
+confirming physical controller buttons now work correctly (a prior install had a button/input bug).
+Investigated why ADB's synthetic `input tap`/`keyevent` commands were landing inconsistently against
+RetroArch's Ozone UI: `getevent -i` shows the device has a real **"Odin Controller" gamepad**
+(`/dev/input/event8`) as its own hardware input device, separate from ADB's virtual input path --
+RetroArch is correctly bound to the physical controller now (confirmed via an on-screen "Virtual
+(0/0) not configured, using fallback" toast), which is *why* it was flaky over ADB, not a bug.
+Confirmed Beetle Saturn (`mednafen_saturn_libretro_android.so`) and PCSX ReARMed
+(`pcsx_rearmed_libretro_android.so`) cores are both present on-device after the user reinstalled
+them via RetroArch's in-app Online Updater.
+
+**Realized a full Gauntlet run (telemetry + report) had not actually happened yet** -- content and
+cores were onboarded/confirmed-launchable, but no device-specific `apps.json` existed for the
+Odin2EX and `Invoke-BenchmarkSuite.ps1` had never been invoked against it. Investigated each
+emulator's manifest via `pm dump` to look for a scriptable direct-ROM-launch intent:
+
+- **Flycast**: has a genuine `file://` `ACTION_VIEW` handler on `.MainActivity` (the only one of the
+  5 apps that does) -- but actually attempting `am start -a VIEW -d 'file:///.../Crazy Taxi
+  (USA).cue'` failed at runtime with `Cannot stat ...`. Root cause: **Android 13 scoped storage
+  blocks raw filesystem path access outside an app's own sandbox even when an intent filter exists**
+  -- only the in-app SAF folder grant (content:// DocumentsProvider) actually has read access. So
+  even Flycast's best-looking manifest doesn't give us a scriptable direct-launch path here.
+- **DuckStation, AetherSX2/NetherSX2, RetroArch**: manifests expose MAIN/LAUNCHER only, no
+  ACTION_VIEW handler at all (consistent with the same limitation already documented on RG476H).
+- **Yaba Sanshiro** (confirmed actual installed package: `org.devmiyax.yabasanshioro2`, the free
+  Play Store build -- NOT `.pro` as the backlog note assumed): has a second activity
+  (`org.uoyabause.android.Yabause`) declaring both MAIN and VIEW actions, worth a follow-up check,
+  but not yet confirmed to actually work -- treated as launcher-only for now.
+
+**Conclusion:** none of the 5 installed emulators can be driven to a specific ROM by script alone on
+this device/Android version. Asked the user how to proceed; they opted to build the config now and
+run the full suite later. Created **`apps.odin2ex.json`** with launcher-only `launchIntent` entries
+for all 5 (RetroArch-PS1, RetroArch-Saturn, DuckStation, Flycast, NetherSX2-PS2, YabaSanshiro2 --
+6 entries total since RetroArch is split into two labeled rows for PS1 vs Saturn core reporting),
+each documenting exactly which ROMs are staged and ready, and recommending `-SkipMonkey` (manual
+play while telemetry logs) as the practical way to actually run a title per README's documented
+`-SkipMonkey` mode.
+
+**Not yet done -- this is the actual "full test" still outstanding:**
+1. Run `.\Invoke-BenchmarkSuite.ps1 -DeviceName Odin2EX -AppsConfig .\apps.odin2ex.json -SkipMonkey`
+   with the user manually loading and playing one title per app during each app's `durationSec`
+   window, to produce real `telemetry.csv`/`cooldown.csv`/`framestats.txt`/screenshots per app.
+2. Run `New-BenchReport.ps1` (or let the suite auto-call it) to produce `report.md` for the device.
+3. Optionally follow up on whether Yaba Sanshiro's `Yabause` activity's VIEW action is actually
+   usable for direct launch (untested).
