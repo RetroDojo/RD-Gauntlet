@@ -8,3 +8,4 @@ last-push-report.json
 artifacts/
 nci_artifacts/
 nci_test_artifacts/
+__pycache__/
