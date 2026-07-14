@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://retodojo.local/rd-gauntlet/broll/settings-matrix.schema.json",
+  "title": "RD-Gauntlet B-roll Settings Matrix",
+  "type": "object",
+  "required": ["jobName", "target", "permutations"],
+  "properties": {
+    "jobName": { "type": "string", "minLength": 1 },
+    "outputRoot": { "type": "string" },
+    "clipDurationSec": { "type": "integer", "minimum": 1 },
+    "device": {
+      "type": "object",
+      "properties": {
+        "serial": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "target": {
+      "type": "object",
+      "required": ["emulator", "package"],
+      "properties": {
+        "emulator": {
+          "type": "string",
+          "enum": ["retroarch", "duckstation", "flycast", "aethersx2"]
+        },
+        "package": { "type": "string", "minLength": 1 },
+        "startupDelaySec": { "type": "integer", "minimum": 0 },
+        "scrcpyArgs": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "paths": {
+          "type": "object",
+          "properties": {
+            "retroarchCfg": { "type": "string" },
+            "coreOptionsCfg": { "type": "string" }
+          },
+          "additionalProperties": true
+        },
+        "scene": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["retroarch_nci_state_slot", "save_file_prestage_tbd", "none"]
+            },
+            "slot": { "type": "integer", "minimum": 0 },
+            "saveId": { "type": "string" }
+          },
+          "additionalProperties": true
+        },
+        "launch": {
+          "type": "object",
+          "properties": {
+            "intent": {
+              "type": "object",
+              "properties": {
+                "action": { "type": "string" },
+                "dataUri": { "type": "string" },
+                "mimeType": { "type": "string" },
+                "component": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": true
+    },
+    "permutations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "label": { "type": "string" },
+          "overrides": {
+            "type": "object",
+            "properties": {
+              "retroarchCfg": { "type": "object", "additionalProperties": true },
+              "coreOptions": { "type": "object", "additionalProperties": true },
+              "duckstationCfg": { "type": "object", "additionalProperties": true },
+              "flycastCfg": { "type": "object", "additionalProperties": true },
+              "aethersx2Cfg": { "type": "object", "additionalProperties": true }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false
+}

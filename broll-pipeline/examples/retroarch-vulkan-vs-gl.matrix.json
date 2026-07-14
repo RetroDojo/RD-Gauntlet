@@ -1,0 +1,58 @@
+{
+  "jobName": "retroarch-vulkan-vs-gl-2up",
+  "outputRoot": "..\\artifacts\\broll",
+  "clipDurationSec": 10,
+  "device": {
+    "serial": "97b7c783"
+  },
+  "target": {
+    "emulator": "retroarch",
+    "package": "com.retroarch.aarch64",
+    "startupDelaySec": 5,
+    "paths": {
+      "retroarchCfg": "/storage/emulated/0/RetroArch/retroarch.cfg",
+      "coreOptionsCfg": "/storage/emulated/0/RetroArch/config/retroarch-core-options.cfg"
+    },
+    "scene": {
+      "type": "retroarch_nci_state_slot",
+      "slot": 3
+    },
+    "launch": {
+      "intent": {
+        "action": "android.intent.action.MAIN"
+      }
+    }
+  },
+  "permutations": [
+    {
+      "id": "gl_1x_integer_off",
+      "label": "GL, 1x internal, integer off, bilinear off",
+      "overrides": {
+        "retroarchCfg": {
+          "video_driver": "gl",
+          "video_smooth": "false",
+          "video_scale_integer": "false",
+          "video_shader_enable": "false"
+        },
+        "coreOptions": {
+          "pcsx_rearmed_internal_resolution": "1"
+        }
+      }
+    },
+    {
+      "id": "vulkan_4x_integer_on",
+      "label": "Vulkan, 4x internal, integer on, bilinear off",
+      "overrides": {
+        "retroarchCfg": {
+          "video_driver": "vulkan",
+          "video_smooth": "false",
+          "video_scale_integer": "true",
+          "video_shader_enable": "false"
+        },
+        "coreOptions": {
+          "pcsx_rearmed_internal_resolution": "4"
+        }
+      }
+    }
+  ]
+}

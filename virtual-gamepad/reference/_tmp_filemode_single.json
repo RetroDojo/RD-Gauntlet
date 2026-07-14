@@ -1,0 +1,1 @@
+{"id":1,"command":"register","name":"RDG Single","vid":4,"pid":4,"bus":"usb","configuration":[{"type":"UI_SET_EVBIT","data":["EV_KEY"]},{"type":"UI_SET_KEYBIT","data":["KEY_A"]}]}

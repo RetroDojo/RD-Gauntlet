@@ -1,0 +1,37 @@
+{
+  "defaults": {
+    "bus": "usb",
+    "schema": "auto",
+    "quirks": {
+      "default_hold_ms": 90,
+      "default_inter_event_ms": 60,
+      "startup_delay_ms": 120,
+      "abs_flat": 15
+    }
+  },
+  "profiles": [
+    {
+      "id": "odin2ex-97b7c783",
+      "match": {
+        "serial": "97b7c783",
+        "product_name": "Odin2EX"
+      },
+      "display_name": "Odin Controller (Virtual)",
+      "vid": "0x2020",
+      "pid": "0x0111",
+      "schema": "numeric",
+      "quirks": {
+        "default_hold_ms": 120,
+        "default_inter_event_ms": 80
+      }
+    }
+  ],
+  "fallback": {
+    "id": "generic-gamepad-auto",
+    "display_name": "RDG Generic Virtual Gamepad",
+    "vid": "0x045e",
+    "pid": "0x0b13",
+    "schema": "auto"
+  }
+}
+

@@ -1,0 +1,8 @@
+[
+  { "action": "button", "button": "DPAD_DOWN", "hold_ms": 90, "inter_event_ms": 120 },
+  { "action": "button", "button": "DPAD_DOWN", "hold_ms": 90, "inter_event_ms": 120 },
+  { "action": "button", "button": "A", "hold_ms": 110, "inter_event_ms": 160 },
+  { "action": "delay", "duration_ms": 300 },
+  { "action": "button", "button": "B", "hold_ms": 110, "inter_event_ms": 160 }
+]
+

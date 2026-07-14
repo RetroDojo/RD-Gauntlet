@@ -250,6 +250,138 @@ dirs). Fix from part 3 fully validated.
 
 User separately uninstalled the old RetroArch install and updated to a fresh nightly build,
 confirming physical controller buttons now work correctly (a prior install had a button/input bug).
+
+### 2026-07-13 (part 5): RG476H "full test" retroactive audit + RetroArch direct-launch re-test on O2EX
+
+User challenged why a "full test suite" couldn't be run on O2EX the way it supposedly was on RG476H.
+Audited `results\rg476h-emulator-batch\`, `results\rg476h-ppsspp\`, `results\rg476h-content-validated*\`,
+and `results\full-validation-retroarch\` to check what those runs actually captured:
+
+- **DraStic**: reached real gameplay (in-game screenshot) -- has a working file-URI `ACTION_VIEW` handler.
+- **PPSSPP**: reached a real game title screen, but only because a monkey tap happened to land on a
+  "Recent" game thumbnail -- not a guaranteed/scriptable path.
+- **Mupen64PlusFZ**: never left the "Refresh ROMs / Select File / Select Folder" screen in either
+  `rg476h-emulator-batch` or `rg476h-content-validated(-2)` runs -- same menu-only limitation seen on O2EX.
+- **RetroArch** (`full-validation-retroarch`): never left the Main Menu -- that run used a launcher-only
+  intent, no direct-launch extras.
+- **Flycast**: `00-launch.png` shows the exact same empty "Add Game Folder" screen we chased on O2EX.
+- **RetroArch-PS1 direct-launch via ROM/LIBRETRO/CONFIGFILE** (claimed working in `apps.emulators.json`'s
+  notes): no corresponding results folder exists anywhere in `results\` -- the claim was never actually
+  captured/verified, only asserted in a comment.
+
+**Conclusion**: the RG476H "full test" was itself a mix of real gameplay (1 confirmed app, 1 lucky app)
+and menu/dialog screenshots -- not a uniformly successful gauntlet. It does not prove a general solution
+exists; it proves a couple of apps happened to expose a working direct-launch intent on that specific
+build.
+
+**Live re-test of the RetroArch ROM/LIBRETRO/CONFIGFILE direct-launch intent on O2EX**: attempted the
+exact intent documented as working on RG476H, using `CrashTeamRacing.pbp` (space-free filename, PCSX
+ReARMed core, BIOS already present under `RetroArch/system/`). First attempt used the RG476H-documented
+core path (`/data/user/0/com.retroarch.aarch64/cores/...`) -- found via `find` that O2EX's nightly build
+actually stores cores externally at `/storage/emulated/0/RetroArch/cores/pcsx_rearmed_libretro_android.so`
+instead. Corrected the path and retried (also corrected `CONFIGFILE` to the matching external path) --
+process launches and stays alive, but stalls indefinitely on a black screen with **0% CPU** (confirmed
+via two `/proc/<pid>/stat` samples 4s apart showing identical `utime`/`stime` -- zero ticks, i.e.
+genuinely idle, not just slow). Ruled out device sleep as the cause (`dumpsys power` showed
+`mWakefulness=Dozing` on one check -- woke the device with `KEYCODE_WAKEUP` and confirmed `Awake`,
+re-tested, still stalled identically). No crash/fatal in `logcat --pid=<pid>` -- RetroArch's native
+core-loading logging doesn't reach logcat by default, so failure is silent from the ADB side.
+
+**Working conclusion**: the ROM/LIBRETRO/CONFIGFILE direct-launch approach is fragile across RetroArch
+build/device combos (see next section for the approach that actually solved this).
+
+## 2026-07-13/14 (part 6) — Three validated O2EX automation methods + expanded overnight research
+
+Following the direct-launch dead-end above, three automation approaches were researched and then
+live-validated on O2EX (`97b7c783`), each with independent post-test cleanup verification (never
+trusting an agent's self-reported cleanup):
+
+### RetroArch Network Control Interface (NCI) — strongest result
+
+Enabled `network_cmd_enable="true"` / `network_cmd_port="55355"` in `retroarch.cfg`. Direct-launched
+content using the **internal** core path (`/data/user/0/com.retroarch.aarch64/cores/...`) — the
+external path (`/storage/emulated/0/RetroArch/cores/...`) is the one that black-screens/stalls at 0%
+CPU (see part 5 above); this contradicted the RG476H-derived assumption that external was correct.
+Verified **real gameplay reached** via `GET_STATUS` for both:
+- **PS1**: `CrashTeamRacing.pbp` → `PLAYING playstation,CrashTeamRacing,crc32=d39c2f2`
+- **Saturn**: `DaytonaUSA.chd` (Beetle Saturn core) → `PLAYING sega_saturn,DaytonaUSA,crc32=83dea0a1`
+
+Sender pattern (no `adb forward` needed — NCI only listens on-device loopback):
+```
+adb shell "timeout 3 sh -c 'echo -n <CMD> | nc -u -w1 -q1 127.0.0.1 55355'"
+```
+Validated commands: `MENU_TOGGLE`, `PAUSE_TOGGLE`, `RESET`, `SAVE_STATE_SLOT`/`LOAD_STATE_SLOT`,
+`READ_CORE_MEMORY`. `network_cmd_enable` triple-verified reverted to `false` after testing.
+
+**Version requirement discovered (2026-07-14 research)**: NCI's Android `HAVE_COMMAND` persistence
+fix landed 2026-03-25; the `MENU_TOGGLE` runahead-drop fix landed 2026-05-22. **Require a direct/
+nightly RetroArch APK from after those dates — never Google Play builds** (years out of date per
+RetroArch's own docs). Full compatibility checklist: `docs/retroarch-nci-compatibility.md`.
+
+### `adb shell uinput` virtual gamepad
+
+Discovered physical "Odin Controller" identity via `getevent -lp`/`dumpsys input`: VID:PID
+`0x2020:0x0111`. This device's `uinput` binary needs **numeric-string-typed** event codes (e.g.
+`"304"` for `BTN_SOUTH`) rather than symbolic labels (`"BTN_SOUTH"`) shown in newer AOSP CTS docs.
+**Root cause found in overnight research**: this is an **Android-13/14 vs Android-15+ split in AOSP
+itself** (`Event.java`'s numeric-only parser vs. the newer `JsonStyleParser` that accepts both) — not
+a device-specific quirk. Branch on Android SDK version, not per-device guesswork. RetroArch,
+DuckStation, AetherSX2 all recognized the virtual gamepad and reached EmulationActivity/save-state UI.
+Flycast responsive but inconclusive. One run caused a transient RetroArch ANR from aggressive scripted
+input — independently verified harmless afterward. Device confirmed ephemeral (vanishes on stdin
+close). Full cross-device research, safe-injection-rate table, and a 9-phase device/emulator
+certification checklist: `docs/virtual-gamepad-research.md`. Reusable implementation:
+`virtual-gamepad/` (see below).
+
+### On-screen overlay touch-tap
+
+Found RetroArch neo-retropad overlay coordinates for 1920x1080 landscape (Up (182,507), Down
+(182,695), Left (88,601), Right (276,601), A (1848,601), B (1738,710), X (1738,491), Y (1629,601)).
+DuckStation & AetherSX2: high reliability, reached graphics/resolution settings and save-state menus
+via touch. Flycast: launch works via long-press tile, but in-menu taps unresponsive on this build.
+RetroArch: gameplay touch confirmed via SSIM diffs, but quick-menu toggle unreliable via touch.
+**Note: coordinates are resolution/orientation-specific and must be recalibrated per device.**
+
+### Reversibility discipline (hard rule going forward)
+
+One violation occurred this session (leftover `network_cmd_enable=true`), caught only via manual
+post-hoc audit. **Rule adopted**: snapshot original state before any device-modifying test,
+independently re-verify cleanup after every agent run — never trust self-reported cleanup alone.
+
+### Overnight expansion (2026-07-14) — research + build agents, no live device work
+
+With the user away overnight, five additional workstreams were completed (research + code-writing
+only, no live device interaction):
+
+1. **Console expansion research** (Wii/Switch/PS3/Xbox on Android) — `docs/console-expansion-research.md`.
+   Verdict: **add Wii now** (Dolphin Android, solid on Snapdragon 8-gen tier); **Switch experimental-only**
+   (post-Yuzu/Ryujinx ecosystem unstable — Citron Neo is the one to watch); **PS3/Xbox not viable**
+   on Android hardware at all (RPCS3/Xemu/Xenia are desktop-only; Winlator too fragile to benchmark).
+2. **Universal virtual gamepad research** — `docs/virtual-gamepad-research.md` (see above).
+3. **Virtual gamepad module build** — `virtual-gamepad/` (`rdg_virtual_gamepad.py`,
+   `device-profiles.json`, `preflight_validate.py`, sample sequence, README). Schema auto-probe
+   (symbolic→numeric fallback), per-device profile system so new handhelds are onboarded via config,
+   not code changes. `preflight_validate.py` gates all side-effecting steps behind `--live`.
+4. **RetroArch NCI version/requirements verification** — `docs/retroarch-nci-compatibility.md` (see above).
+5. **B-roll headless capture pipeline build** — `broll-pipeline/` (`Run-BrollComparisonJob.ps1`,
+   `Invoke-BrollCapture.ps1`, `New-BrollComparisonGrid.ps1`, `ConfigPatcher.psm1`,
+   `Broll.Common.psm1`, settings-matrix schema + example, README). RetroArch config-patch + NCI
+   `LOAD_STATE_SLOT` scene-reproducibility fully implemented; DuckStation/Flycast/AetherSX2 config
+   strategies stubbed with clear TODOs (need live-device key discovery). Dry-run mode lets the whole
+   pipeline be reviewed without touching a device. Recording via `scrcpy --no-playback --no-window
+   --time-limit=N --record=`; comparison grids via ffmpeg `drawtext` + `hstack`/`xstack`.
+
+**Not yet done / needs the user present with a connected device**: live validation of the
+virtual-gamepad preflight script's LIVE mode, live validation of the B-roll pipeline end-to-end
+(scrcpy/ffmpeg must be confirmed on PATH; DuckStation/Flycast/AetherSX2 config keys need discovery),
+and the still-pending `run-o2ex-full-gauntlet` — an actual full `Invoke-BenchmarkSuite.ps1` pass has
+never been executed against O2EX.
+builds/devices (core storage location varies) and even once paths are corrected it does not reliably
+reach gameplay on this O2EX build -- most likely blocked by a scoped-storage-related failure reading the
+core `.so` or content file from a raw path, consistent with the same class of issue seen with Flycast's
+`file://` VIEW intent. This is not a config typo we can just fix; it needs either root access to confirm
+what's actually failing, or an entirely different automation approach (see the input-automation research
+task started the same day, and `run-o2ex-full-gauntlet` / `retroarch-direct-launch-o2ex-test` SQL todos).
 Investigated why ADB's synthetic `input tap`/`keyevent` commands were landing inconsistently against
 RetroArch's Ozone UI: `getevent -i` shows the device has a real **"Odin Controller" gamepad**
 (`/dev/input/event8`) as its own hardware input device, separate from ADB's virtual input path --

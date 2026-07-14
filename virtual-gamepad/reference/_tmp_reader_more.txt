@@ -1,0 +1,185 @@
+
+=== readBus ()Lcom/android/commands/uinput/Event$Bus; ===
+iget-object              v0, v2, Lcom/android/commands/uinput/Event$Reader;->mReader Landroid/util/JsonReader;
+invoke-virtual           v0, Landroid/util/JsonReader;->nextString()Ljava/lang/String;
+move-result-object       v0
+invoke-virtual           v0, Ljava/lang/String;->toUpperCase()Ljava/lang/String;
+move-result-object       v1
+invoke-static            v1, Lcom/android/commands/uinput/Event$Bus;->valueOf(Ljava/lang/String;)Lcom/android/commands/uinput/Event$Bus;
+move-result-object       v1
+return-object            v1
+
+=== readInt ()I ===
+iget-object              v0, v2, Lcom/android/commands/uinput/Event$Reader;->mReader Landroid/util/JsonReader;
+invoke-virtual           v0, Landroid/util/JsonReader;->nextString()Ljava/lang/String;
+move-result-object       v0
+invoke-static            v0, Ljava/lang/Integer;->decode(Ljava/lang/String;)Ljava/lang/Integer;
+move-result-object       v1
+invoke-virtual           v1, Ljava/lang/Integer;->intValue()I
+move-result              v1
+return                   v1
+
+=== getNextEvent ()Lcom/android/commands/uinput/Event; ===
+const/4                  v0, 0
+if-nez                   v0, +134h
+iget-object              v1, v5, Lcom/android/commands/uinput/Event$Reader;->mReader Landroid/util/JsonReader;
+invoke-virtual           v1, Landroid/util/JsonReader;->peek()Landroid/util/JsonToken;
+move-result-object       v1
+sget-object              v2, Landroid/util/JsonToken;->END_DOCUMENT Landroid/util/JsonToken;
+if-eq                    v1, v2, +12ah
+new-instance             v1, Lcom/android/commands/uinput/Event$Builder;
+invoke-direct            v1, Lcom/android/commands/uinput/Event$Builder;-><init>()V
+iget-object              v2, v5, Lcom/android/commands/uinput/Event$Reader;->mReader Landroid/util/JsonReader;
+invoke-virtual           v2, Landroid/util/JsonReader;->beginObject()V
+iget-object              v2, v5, Lcom/android/commands/uinput/Event$Reader;->mReader Landroid/util/JsonReader;
+invoke-virtual           v2, Landroid/util/JsonReader;->hasNext()Z
+move-result              v2
+if-eqz                   v2, +0fch
+iget-object              v2, v5, Lcom/android/commands/uinput/Event$Reader;->mReader Landroid/util/JsonReader;
+invoke-virtual           v2, Landroid/util/JsonReader;->nextName()Ljava/lang/String;
+move-result-object       v2
+const/4                  v3, -1
+invoke-virtual           v2, Ljava/lang/String;->hashCode()I
+move-result              v4
+sparse-switch            v4, +000010ch
+goto/16                  +073h
+const-string             v4, "configuration"
+invoke-virtual           v2, v4, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+move-result              v4
+if-eqz                   v4, -008h
+const/4                  v3, 7
+goto/16                  +068h
+const-string             v4, "abs_info"
+invoke-virtual           v2, v4, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+move-result              v4
+if-eqz                   v4, -013h
+const/16                 v3, 9
+goto                     +5ch
+const-string             v4, "ff_effects_max"
+invoke-virtual           v2, v4, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+move-result              v4
+if-eqz                   v4, -01eh
+const/16                 v3, 8
+goto                     +51h
+const-string             v4, "command"
+invoke-virtual           v2, v4, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+move-result              v4
+if-eqz                   v4, -029h
+const/4                  v3, 1
+goto                     +47h
+const-string             v4, "name"
+invoke-virtual           v2, v4, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+move-result              v4
+if-eqz                   v4, -033h
+const/4                  v3, 2
+goto                     +3dh
+const-string             v4, "vid"
+invoke-virtual           v2, v4, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+move-result              v4
+if-eqz                   v4, -03dh
+const/4                  v3, 3
+goto                     +33h
+const-string             v4, "pid"
+invoke-virtual           v2, v4, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+move-result              v4
+if-eqz                   v4, -047h
+const/4                  v3, 4
+goto                     +29h
+const-string             v4, "bus"
+invoke-virtual           v2, v4, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+move-result              v4
+if-eqz                   v4, -051h
+const/4                  v3, 5
+goto                     +1fh
+const-string             v4, "id"
+invoke-virtual           v2, v4, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+move-result              v4
+if-eqz                   v4, -05bh
+const/4                  v3, 0
+goto                     +15h
+const-string             v4, "events"
+invoke-virtual           v2, v4, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+move-result              v4
+if-eqz                   v4, -065h
+const/4                  v3, 6
+goto                     +bh
+const-string             v4, "duration"
+invoke-virtual           v2, v4, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+move-result              v4
+if-eqz                   v4, -06fh
+const/16                 v3, 10
+packed-switch            v3, +00000c4h
+iget-object              v3, v5, Lcom/android/commands/uinput/Event$Reader;->mReader Landroid/util/JsonReader;
+goto/16                  +06fh
+invoke-direct            v5, Lcom/android/commands/uinput/Event$Reader;->readInt()I
+move-result              v3
+invoke-virtual           v1, v3, Lcom/android/commands/uinput/Event$Builder;->setDuration(I)V
+goto                     +69h
+invoke-direct            v5, Lcom/android/commands/uinput/Event$Reader;->readAbsInfoArray()Landroid/util/SparseArray;
+move-result-object       v3
+invoke-virtual           v1, v3, Lcom/android/commands/uinput/Event$Builder;->setAbsInfo(Landroid/util/SparseArray;)V
+goto                     +61h
+invoke-direct            v5, Lcom/android/commands/uinput/Event$Reader;->readInt()I
+move-result              v3
+invoke-virtual           v1, v3, Lcom/android/commands/uinput/Event$Builder;->setFfEffectsMax(I)V
+goto                     +59h
+invoke-direct            v5, Lcom/android/commands/uinput/Event$Reader;->readConfiguration()Landroid/util/SparseArray;
+move-result-object       v3
+invoke-virtual           v1, v3, Lcom/android/commands/uinput/Event$Builder;->setConfiguration(Landroid/util/SparseArray;)V
+goto                     +51h
+invoke-direct            v5, Lcom/android/commands/uinput/Event$Reader;->readIntList()Ljava/util/ArrayList;
+move-result-object       v3
+invoke-virtual           v3, Ljava/util/ArrayList;->stream()Ljava/util/stream/Stream;
+move-result-object       v3
+new-instance             v4, Lcom/android/commands/uinput/Event$Reader$$ExternalSyntheticLambda0;
+invoke-direct            v4, Lcom/android/commands/uinput/Event$Reader$$ExternalSyntheticLambda0;-><init>()V
+invoke-interface         v3, v4, Ljava/util/stream/Stream;->mapToInt(Ljava/util/function/ToIntFunction;)Ljava/util/stream/IntStream;
+move-result-object       v3
+invoke-interface         v3, Ljava/util/stream/IntStream;->toArray()[I
+move-result-object       v3
+invoke-virtual           v1, v3, Lcom/android/commands/uinput/Event$Builder;->setInjections([I)V
+goto                     +38h
+invoke-direct            v5, Lcom/android/commands/uinput/Event$Reader;->readBus()Lcom/android/commands/uinput/Event$Bus;
+move-result-object       v3
+invoke-virtual           v1, v3, Lcom/android/commands/uinput/Event$Builder;->setBus(Lcom/android/commands/uinput/Event$Bus;)V
+goto                     +30h
+invoke-direct            v5, Lcom/android/commands/uinput/Event$Reader;->readInt()I
+move-result              v3
+invoke-virtual           v1, v3, Lcom/android/commands/uinput/Event$Builder;->setPid(I)V
+goto                     +28h
+invoke-direct            v5, Lcom/android/commands/uinput/Event$Reader;->readInt()I
+move-result              v3
+invoke-virtual           v1, v3, Lcom/android/commands/uinput/Event$Builder;->setVid(I)V
+goto                     +20h
+iget-object              v3, v5, Lcom/android/commands/uinput/Event$Reader;->mReader Landroid/util/JsonReader;
+invoke-virtual           v3, Landroid/util/JsonReader;->nextString()Ljava/lang/String;
+move-result-object       v3
+invoke-virtual           v1, v3, Lcom/android/commands/uinput/Event$Builder;->setName(Ljava/lang/String;)V
+goto                     +16h
+iget-object              v3, v5, Lcom/android/commands/uinput/Event$Reader;->mReader Landroid/util/JsonReader;
+invoke-virtual           v3, Landroid/util/JsonReader;->nextString()Ljava/lang/String;
+move-result-object       v3
+invoke-static            v1, v3, Lcom/android/commands/uinput/Event$Builder;->-$$Nest$msetCommand(Lcom/android/commands/uinput/Event$Builder; Ljava/lang/String;)V
+goto                     +ch
+invoke-direct            v5, Lcom/android/commands/uinput/Event$Reader;->readInt()I
+move-result              v3
+invoke-virtual           v1, v3, Lcom/android/commands/uinput/Event$Builder;->setId(I)V
+goto                     +4h
+invoke-virtual           v3, Landroid/util/JsonReader;->skipValue()V
+goto/16                  -100h
+iget-object              v2, v5, Lcom/android/commands/uinput/Event$Reader;->mReader Landroid/util/JsonReader;
+invoke-virtual           v2, Landroid/util/JsonReader;->endObject()V
+nop                      
+invoke-virtual           v1, Lcom/android/commands/uinput/Event$Builder;->build()Lcom/android/commands/uinput/Event;
+move-result-object       v0
+goto/16                  -122h
+move-exception           v2
+const-string             v3, "Error reading in object, ignoring."
+invoke-static            v3, v2, Lcom/android/commands/uinput/Event;->-$$Nest$smerror(Ljava/lang/String; Ljava/lang/Exception;)V
+invoke-direct            v5, Lcom/android/commands/uinput/Event$Reader;->consumeRemainingElements()V
+iget-object              v3, v5, Lcom/android/commands/uinput/Event$Reader;->mReader Landroid/util/JsonReader;
+invoke-virtual           v3, Landroid/util/JsonReader;->endObject()V
+goto/16                  -132h
+return-object            v0
+sparse-switch-payload    -76bbb26c -4cf81ee7 d1b 17e80 1b18b 1c811 337a8b 38a5df4b 459447a8 661e1c5b 733374f6
+packed-switch-payload    0 1 2 3 4 5 6 7 8 9 a
