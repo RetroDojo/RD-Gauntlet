@@ -10,8 +10,9 @@
     "package": "com.retroarch.aarch64",
     "startupDelaySec": 5,
     "paths": {
-      "retroarchCfg": "/storage/emulated/0/RetroArch/retroarch.cfg",
-      "coreOptionsCfg": "/storage/emulated/0/RetroArch/config/retroarch-core-options.cfg"
+      "_comment": "Path varies by device/Android version. Scoped-storage RetroArch builds (observed on O2EX, Android 13) use Android/data/<pkg>/files/; legacy/all-files-access builds may use /storage/emulated/0/RetroArch/. Verify with: adb shell find /storage/emulated/0 -iname retroarch.cfg",
+      "retroarchCfg": "/storage/emulated/0/Android/data/com.retroarch.aarch64/files/retroarch.cfg",
+      "coreOptionsCfg": "/storage/emulated/0/Android/data/com.retroarch.aarch64/files/retroarch-core-options.cfg"
     },
     "scene": {
       "type": "retroarch_nci_state_slot",

@@ -173,6 +173,11 @@ $gpuMetadata = Get-GpuMetadata -Serial $serial -DryRun:$DryRun
 $captures = @()
 $index = 0
 
+# Device-safety discipline: the device must be returned to the state it was found in,
+# no matter how the job ends. Any config file patched by a permutation gets backed up on
+# its first patch (see ConfigPatcher's Backup-RemoteConfigFile) and restored here in the
+# finally block below -- covering normal completion, thrown errors, and Ctrl+C alike.
+try {
 foreach ($rawPermutation in @($matrixTable.permutations)) {
     $index++
     $permutation = ConvertTo-BrollHashtable -InputObject $rawPermutation
@@ -211,7 +216,10 @@ foreach ($rawPermutation in @($matrixTable.permutations)) {
             $scrcpyArgs += [string]$arg
         }
     }
-    Invoke-BrollExternal -FilePath 'scrcpy' -Arguments $scrcpyArgs -StepDescription "Recording clip $clipFileName" -DryRun:$DryRun | Out-Null
+    # scrcpy should self-terminate at --time-limit; add a generous buffer on top as a
+    # backstop so a stalled recording (e.g. device disconnect mid-capture) can't hang the
+    # whole job indefinitely.
+    Invoke-BrollExternal -FilePath 'scrcpy' -Arguments $scrcpyArgs -StepDescription "Recording clip $clipFileName" -DryRun:$DryRun -TimeoutSec ($durationSec + 30) | Out-Null
 
     $manifest = [pscustomobject]@{
         timestampUtc     = (Get-Date).ToUniversalTime().ToString('o')
@@ -235,6 +243,17 @@ foreach ($rawPermutation in @($matrixTable.permutations)) {
         permutationId = $permId
         label         = $settingsSummary
     }
+}
+}
+finally {
+    $restoreContext = @{
+        Serial      = $serial
+        WorkDir     = $workDir
+        Target      = $target
+        Permutation = @{}
+    }
+    Write-BrollStatus -Message 'Restoring device config to pre-job state...'
+    Invoke-RestoreEmulatorConfig -Emulator $emulator -Context $restoreContext -DryRun:$DryRun
 }
 
 $captureIndexPath = Join-Path $jobOutput 'captures-index.json'

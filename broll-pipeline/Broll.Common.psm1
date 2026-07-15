@@ -44,12 +44,20 @@ function Ensure-BrollCommand {
 }
 
 function Invoke-BrollExternal {
+    # Enforces a hard wall-clock ceiling on every external process this pipeline spawns.
+    # Rationale: a hung adb/nc/scrcpy call (observed live: toybox nc orphaning under adb
+    # shell, holding a pipe open so adb shell never returns EOF) must never be allowed to
+    # block indefinitely -- doing so would starve the calling script's try/finally
+    # device-restore safety net of a chance to ever run. On timeout, the process (and any
+    # children it spawned) is force-killed and the call is treated as a failure (or
+    # ignored if -AllowFailure), same as a nonzero exit code.
     param(
         [Parameter(Mandatory = $true)][string]$FilePath,
         [Parameter(Mandatory = $true)][string[]]$Arguments,
         [string]$StepDescription = $FilePath,
         [switch]$AllowFailure,
-        [switch]$DryRun
+        [switch]$DryRun,
+        [int]$TimeoutSec = 30
     )
 
     $joined = ($Arguments | ForEach-Object {
@@ -63,17 +71,49 @@ function Invoke-BrollExternal {
         }
     }
 
-    $oldErrorActionPreference = $ErrorActionPreference
-    $ErrorActionPreference = 'Continue'
+    $psi = [System.Diagnostics.ProcessStartInfo]::new()
+    $psi.FileName = $FilePath
+    foreach ($arg in $Arguments) { $psi.ArgumentList.Add($arg) }
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $psi.UseShellExecute = $false
+
+    $proc = [System.Diagnostics.Process]::new()
+    $proc.StartInfo = $psi
+    $stdout = [System.Text.StringBuilder]::new()
+    $stderr = [System.Text.StringBuilder]::new()
+    $outEvent = Register-ObjectEvent -InputObject $proc -EventName OutputDataReceived -Action { if ($null -ne $Event.SourceEventArgs.Data) { $Event.MessageData.Append($Event.SourceEventArgs.Data).Append([Environment]::NewLine) | Out-Null } } -MessageData $stdout
+    $errEvent = Register-ObjectEvent -InputObject $proc -EventName ErrorDataReceived -Action { if ($null -ne $Event.SourceEventArgs.Data) { $Event.MessageData.Append($Event.SourceEventArgs.Data).Append([Environment]::NewLine) | Out-Null } } -MessageData $stderr
+
     try {
-        $output = & $FilePath @Arguments 2>&1
+        [void]$proc.Start()
+        $proc.BeginOutputReadLine()
+        $proc.BeginErrorReadLine()
+
+        $timedOut = -not $proc.WaitForExit($TimeoutSec * 1000)
+        if ($timedOut) {
+            Write-BrollStatus -Message "$StepDescription exceeded ${TimeoutSec}s timeout; force-killing process tree." -IsWarning
+            try { $proc.Kill($true) } catch { }
+            $proc.WaitForExit(5000) | Out-Null
+        }
+        else {
+            # Give async output handlers a brief moment to flush the final lines.
+            $proc.WaitForExit()
+        }
     }
     finally {
-        $ErrorActionPreference = $oldErrorActionPreference
+        Unregister-Event -SourceIdentifier $outEvent.Name -ErrorAction SilentlyContinue
+        Unregister-Event -SourceIdentifier $errEvent.Name -ErrorAction SilentlyContinue
+        Remove-Job -Job $outEvent -Force -ErrorAction SilentlyContinue
+        Remove-Job -Job $errEvent -Force -ErrorAction SilentlyContinue
     }
 
-    $exitCode = $LASTEXITCODE
-    $text = ($output | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
+    $exitCode = if ($timedOut) { -1 } else { $proc.ExitCode }
+    $text = ($stdout.ToString() + $stderr.ToString()).TrimEnd([Environment]::NewLine.ToCharArray())
+
+    if ($timedOut -and -not $AllowFailure) {
+        throw ("{0} timed out after {1}s and was force-killed.`n{2}" -f $StepDescription, $TimeoutSec, $text)
+    }
     if (($exitCode -ne 0) -and (-not $AllowFailure)) {
         throw ("{0} failed with exit code {1}`n{2}" -f $StepDescription, $exitCode, $text)
     }
@@ -90,11 +130,12 @@ function Invoke-BrollAdb {
         [Parameter(Mandatory = $true)][string[]]$Arguments,
         [string]$StepDescription = 'adb command',
         [switch]$AllowFailure,
-        [switch]$DryRun
+        [switch]$DryRun,
+        [int]$TimeoutSec = 30
     )
 
     $allArgs = @('-s', $Serial) + $Arguments
-    return Invoke-BrollExternal -FilePath 'adb' -Arguments $allArgs -StepDescription $StepDescription -AllowFailure:$AllowFailure -DryRun:$DryRun
+    return Invoke-BrollExternal -FilePath 'adb' -Arguments $allArgs -StepDescription $StepDescription -AllowFailure:$AllowFailure -DryRun:$DryRun -TimeoutSec $TimeoutSec
 }
 
 function Get-BrollConnectedSerials {
