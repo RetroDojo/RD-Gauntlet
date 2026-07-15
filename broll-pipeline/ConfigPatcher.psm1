@@ -1,6 +1,12 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-Import-Module (Join-Path $PSScriptRoot 'Broll.Common.psm1') -Force
+# NOTE: do NOT pass -Force here. Broll.Common is normally already imported by the caller
+# (Invoke-BrollCapture.ps1) into the top-level session. A forced re-import from inside a
+# nested module creates a second module instance scoped to this module's own session
+# state, which silently un-binds Broll.Common's exported functions (e.g.
+# Ensure-BrollCommand) from the caller's scope -- causing "term not recognized" errors
+# even though the module "successfully" imported moments earlier.
+Import-Module (Join-Path $PSScriptRoot 'Broll.Common.psm1') -ErrorAction SilentlyContinue
 
 function ConvertTo-KeyValueMap {
     param([Parameter(Mandatory = $true)]$InputObject)
