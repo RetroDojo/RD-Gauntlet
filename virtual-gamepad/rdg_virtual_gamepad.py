@@ -462,7 +462,13 @@ def open_session(serial: str, profile: DeviceProfile, schema_override: Optional[
 
 
 def _build_common_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="RetroDojo virtual gamepad automation via adb shell uinput.")
+    # add_help=False: this is used as a `parents=[...]` mix-in for both the top-level
+    # parser and every subcommand parser (see build_parser), so --serial/--profile-id/
+    # --profiles/--schema can be passed either before or after the subcommand name.
+    # Without add_help=False here, argparse raises a conflicting-option error for -h/--help
+    # being defined twice once this parser is used as a parent for the top-level parser
+    # (which needs its own real --help).
+    parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--serial", help="ADB serial. If omitted and exactly one device is attached, that device is used.")
     parser.add_argument("--profile-id", help="Profile id from device-profiles.json.")
     parser.add_argument("--profiles", default=str(DEFAULT_PROFILES_PATH), help="Path to device-profiles.json.")
@@ -550,35 +556,39 @@ def cmd_unregister(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = _build_common_parser()
+    shared = _build_common_parser()
+    parser = argparse.ArgumentParser(
+        description="RetroDojo virtual gamepad automation via adb shell uinput.",
+        parents=[shared],
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    probe = sub.add_parser("probe-schema", help="Probe symbolic vs numeric uinput schema.")
+    probe = sub.add_parser("probe-schema", help="Probe symbolic vs numeric uinput schema.", parents=[shared])
     probe.set_defaults(func=cmd_probe_schema)
 
-    register = sub.add_parser("register-gamepad", help="Register gamepad and keep it alive briefly.")
+    register = sub.add_parser("register-gamepad", help="Register gamepad and keep it alive briefly.", parents=[shared])
     register.add_argument("--keep-alive-ms", default="800", help="How long to keep session open before cleanup.")
     register.set_defaults(func=cmd_register)
 
-    press_button = sub.add_parser("press-button", help="Press one button in an auto-cleanup session.")
+    press_button = sub.add_parser("press-button", help="Press one button in an auto-cleanup session.", parents=[shared])
     press_button.add_argument("button", help="Button name or alias (A/B/X/Y/L1/R1/etc).")
     press_button.add_argument("--hold-ms", type=int, help="Button hold duration.")
     press_button.add_argument("--inter-event-ms", type=int, help="Inter-event delay after release.")
     press_button.set_defaults(func=cmd_press_button)
 
-    press_sequence = sub.add_parser("press-sequence", help="Execute a JSON button/axis/delay sequence.")
+    press_sequence = sub.add_parser("press-sequence", help="Execute a JSON button/axis/delay sequence.", parents=[shared])
     press_sequence.add_argument("--sequence-file", required=True, help="Path to sequence JSON.")
     press_sequence.add_argument("--hold-ms", type=int, help="Default hold duration for button steps.")
     press_sequence.add_argument("--inter-event-ms", type=int, help="Default inter-event delay.")
     press_sequence.set_defaults(func=cmd_press_sequence)
 
-    set_axis = sub.add_parser("set-axis", help="Set one axis value in an auto-cleanup session.")
+    set_axis = sub.add_parser("set-axis", help="Set one axis value in an auto-cleanup session.", parents=[shared])
     set_axis.add_argument("axis", help="Axis (LX,LY,RX,RY,LT,RT,HATX,HATY or ABS_*).")
     set_axis.add_argument("value", type=float, help="Normalized axis value.")
     set_axis.add_argument("--inter-event-ms", type=int, help="Inter-event delay.")
     set_axis.set_defaults(func=cmd_set_axis)
 
-    unregister = sub.add_parser("unregister", help="Documented no-op for stateless CLI sessions.")
+    unregister = sub.add_parser("unregister", help="Documented no-op for stateless CLI sessions.", parents=[shared])
     unregister.set_defaults(func=cmd_unregister)
     return parser
 

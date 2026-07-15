@@ -1,0 +1,12 @@
+[
+  { "action": "axis", "axis": "LX", "value": -1.0, "inter_event_ms": 350 },
+  { "action": "axis", "axis": "LY", "value": -1.0, "inter_event_ms": 350 },
+  { "action": "delay", "duration_ms": 500 },
+  { "action": "button", "button": "A", "hold_ms": 120, "inter_event_ms": 150 },
+  { "action": "axis", "axis": "LX", "value": 1.0, "inter_event_ms": 350 },
+  { "action": "axis", "axis": "LY", "value": 1.0, "inter_event_ms": 350 },
+  { "action": "delay", "duration_ms": 500 },
+  { "action": "button", "button": "B", "hold_ms": 120, "inter_event_ms": 150 },
+  { "action": "axis", "axis": "LX", "value": 0.0, "inter_event_ms": 150 },
+  { "action": "axis", "axis": "LY", "value": 0.0, "inter_event_ms": 150 }
+]

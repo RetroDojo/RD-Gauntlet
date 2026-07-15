@@ -58,11 +58,29 @@
                 "action": { "type": "string" },
                 "dataUri": { "type": "string" },
                 "mimeType": { "type": "string" },
-                "component": { "type": "string" }
+                "component": { "type": "string" },
+                "category": { "type": "string" }
               },
               "additionalProperties": false
             }
           },
+          "additionalProperties": false
+        },
+        "gameplaySequence": {
+          "type": "object",
+          "description": "Optional: drives real input via the RD-Gauntlet virtual-gamepad module (adb shell uinput) while scrcpy records, so the clip shows actual gameplay motion instead of a static menu/save-state screen.",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["virtual_gamepad_sequence"]
+            },
+            "sequenceFile": {
+              "type": "string",
+              "description": "Path (relative to broll-pipeline/) to a JSON sequence file consumed by virtual-gamepad/rdg_virtual_gamepad.py press-sequence."
+            },
+            "timeoutSec": { "type": "integer", "minimum": 1 }
+          },
+          "required": ["type", "sequenceFile"],
           "additionalProperties": false
         }
       },

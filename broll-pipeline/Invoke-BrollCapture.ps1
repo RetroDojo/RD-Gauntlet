@@ -145,6 +145,121 @@ function Invoke-LaunchEmulator {
     }
 }
 
+function Invoke-BrollGameplaySequence {
+    # Drives real gameplay input via the RD-Gauntlet virtual-gamepad module (adb shell
+    # uinput) so a comparison clip can show actual driven motion instead of a static
+    # menu/save-state screen. Non-fatal by design: a hiccup here should degrade the clip
+    # (less motion than intended), not abort the whole capture job or skip the
+    # device-restore safety net in the caller's finally block.
+    param(
+        [Parameter(Mandatory = $true)][string]$Serial,
+        [Parameter(Mandatory = $true)][hashtable]$Target,
+        [switch]$DryRun
+    )
+
+    if (-not ($Target.ContainsKey('gameplaySequence') -and $Target.gameplaySequence)) {
+        return
+    }
+
+    $seq = ConvertTo-BrollHashtable -InputObject $Target.gameplaySequence
+    $seqType = if ($seq.ContainsKey('type')) { [string]$seq.type } else { '' }
+    if ($seqType -ne 'virtual_gamepad_sequence') {
+        Write-BrollStatus -Message "Unknown gameplaySequence.type '$seqType'; skipping." -IsWarning
+        return
+    }
+    if (-not ($seq.ContainsKey('sequenceFile') -and $seq.sequenceFile)) {
+        throw 'gameplaySequence.sequenceFile is required for type virtual_gamepad_sequence.'
+    }
+
+    $sequenceFile = Resolve-BrollPath -BasePath $PSScriptRoot -Path ([string]$seq.sequenceFile)
+    if (-not (Test-Path -LiteralPath $sequenceFile)) {
+        throw "Gameplay sequence file not found: $sequenceFile"
+    }
+
+    $vgpScript = Resolve-BrollPath -BasePath $PSScriptRoot -Path '..\virtual-gamepad\rdg_virtual_gamepad.py'
+    $timeoutSec = if ($seq.ContainsKey('timeoutSec')) { [int]$seq.timeoutSec } else { 20 }
+
+    $pyArgs = @($vgpScript, 'press-sequence', '--serial', $Serial, '--sequence-file', $sequenceFile)
+    $result = Invoke-BrollExternal -FilePath 'python' -Arguments $pyArgs -StepDescription 'Driving gameplay via virtual gamepad' -DryRun:$DryRun -AllowFailure -TimeoutSec $timeoutSec
+    if (-not $DryRun -and $result.ExitCode -ne 0) {
+        Write-BrollStatus -Message "Virtual gamepad sequence exited with code $($result.ExitCode); clip may show less motion than intended.`n$($result.Output)" -IsWarning
+    }
+}
+
+function Invoke-BrollRecordClip {
+    # Records the clip with scrcpy while concurrently driving the (optional) gameplay
+    # sequence, so scripted input actually happens *during* the recording window instead
+    # of before/after it. Mirrors Invoke-BrollExternal's timeout/force-kill safety
+    # semantics but can't reuse it directly since that helper blocks until the child
+    # process exits, which would prevent anything from running concurrently with scrcpy.
+    param(
+        [Parameter(Mandatory = $true)][string]$Serial,
+        [Parameter(Mandatory = $true)][string[]]$ScrcpyArgs,
+        [Parameter(Mandatory = $true)][string]$ClipFileName,
+        [Parameter(Mandatory = $true)][int]$DurationSec,
+        [Parameter(Mandatory = $true)][hashtable]$Target,
+        [switch]$DryRun
+    )
+
+    $joined = ($ScrcpyArgs | ForEach-Object { if ($_ -match '\s') { '"{0}"' -f $_ } else { $_ } }) -join ' '
+    Write-BrollStatus -Message "Recording clip $ClipFileName`: scrcpy $joined"
+
+    if ($DryRun) {
+        Invoke-BrollGameplaySequence -Serial $Serial -Target $Target -DryRun
+        return
+    }
+
+    $psi = [System.Diagnostics.ProcessStartInfo]::new()
+    $psi.FileName = 'scrcpy'
+    foreach ($arg in $ScrcpyArgs) { $psi.ArgumentList.Add($arg) }
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $psi.UseShellExecute = $false
+
+    $proc = [System.Diagnostics.Process]::new()
+    $proc.StartInfo = $psi
+    $stdout = [System.Text.StringBuilder]::new()
+    $stderr = [System.Text.StringBuilder]::new()
+    $outEvent = Register-ObjectEvent -InputObject $proc -EventName OutputDataReceived -Action { if ($null -ne $Event.SourceEventArgs.Data) { $Event.MessageData.Append($Event.SourceEventArgs.Data).Append([Environment]::NewLine) | Out-Null } } -MessageData $stdout
+    $errEvent = Register-ObjectEvent -InputObject $proc -EventName ErrorDataReceived -Action { if ($null -ne $Event.SourceEventArgs.Data) { $Event.MessageData.Append($Event.SourceEventArgs.Data).Append([Environment]::NewLine) | Out-Null } } -MessageData $stderr
+
+    $timedOut = $false
+    try {
+        [void]$proc.Start()
+        $proc.BeginOutputReadLine()
+        $proc.BeginErrorReadLine()
+
+        # Give scrcpy a moment to actually attach and start writing frames before driving
+        # any scripted input -- otherwise the first gameplay actions could land before the
+        # recording has actually started.
+        Start-Sleep -Seconds 2
+
+        Invoke-BrollGameplaySequence -Serial $Serial -Target $Target
+
+        $timedOut = -not $proc.WaitForExit(($DurationSec + 30) * 1000)
+        if ($timedOut) {
+            Write-BrollStatus -Message "Recording clip $ClipFileName exceeded $($DurationSec + 30)s timeout; force-killing scrcpy." -IsWarning
+            try { $proc.Kill($true) } catch { }
+            $proc.WaitForExit(5000) | Out-Null
+        }
+        else {
+            $proc.WaitForExit()
+        }
+    }
+    finally {
+        Unregister-Event -SourceIdentifier $outEvent.Name -ErrorAction SilentlyContinue
+        Unregister-Event -SourceIdentifier $errEvent.Name -ErrorAction SilentlyContinue
+        Remove-Job -Job $outEvent -Force -ErrorAction SilentlyContinue
+        Remove-Job -Job $errEvent -Force -ErrorAction SilentlyContinue
+    }
+
+    $exitCode = if ($timedOut) { -1 } else { $proc.ExitCode }
+    if (($exitCode -ne 0) -and ($exitCode -ne -1)) {
+        $text = ($stdout.ToString() + $stderr.ToString())
+        Write-BrollStatus -Message "scrcpy exited with code $exitCode for clip $ClipFileName. Output:`n$text" -IsWarning
+    }
+}
+
 function Get-SettingsSummary {
     param([Parameter(Mandatory = $true)][hashtable]$Permutation)
 
@@ -275,10 +390,11 @@ foreach ($rawPermutation in @($matrixTable.permutations)) {
             $scrcpyArgs += [string]$arg
         }
     }
-    # scrcpy should self-terminate at --time-limit; add a generous buffer on top as a
+    # scrcpy should self-terminate at --time-limit; a generous buffer on top acts as a
     # backstop so a stalled recording (e.g. device disconnect mid-capture) can't hang the
-    # whole job indefinitely.
-    Invoke-BrollExternal -FilePath 'scrcpy' -Arguments $scrcpyArgs -StepDescription "Recording clip $clipFileName" -DryRun:$DryRun -TimeoutSec ($durationSec + 30) | Out-Null
+    # whole job indefinitely. Recording and any configured gameplay-driving sequence run
+    # concurrently so the clip actually shows the driven motion, not a static screen.
+    Invoke-BrollRecordClip -Serial $serial -ScrcpyArgs $scrcpyArgs -ClipFileName $clipFileName -DurationSec $durationSec -Target $target -DryRun:$DryRun
 
     $manifest = [pscustomobject]@{
         timestampUtc     = (Get-Date).ToUniversalTime().ToString('o')
@@ -292,6 +408,7 @@ foreach ($rawPermutation in @($matrixTable.permutations)) {
         settingsSummary  = $settingsSummary
         permutation      = $permutation
         gpuMetadata      = $gpuMetadata
+        gameplaySequence = if ($target.ContainsKey('gameplaySequence')) { $target.gameplaySequence } else { $null }
         dryRun           = [bool]$DryRun
     }
     Write-BrollJson -Path $manifestPath -Object $manifest

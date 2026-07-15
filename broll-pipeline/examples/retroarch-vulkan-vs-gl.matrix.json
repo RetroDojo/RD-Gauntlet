@@ -22,6 +22,11 @@
       "intent": {
         "action": "android.intent.action.MAIN"
       }
+    },
+    "gameplaySequence": {
+      "type": "virtual_gamepad_sequence",
+      "sequenceFile": "..\\virtual-gamepad\\sequences\\broll-gameplay-drive.json",
+      "timeoutSec": 20
     }
   },
   "permutations": [
