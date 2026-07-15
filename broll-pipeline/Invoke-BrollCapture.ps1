@@ -46,6 +46,35 @@ function Get-GpuMetadata {
     }
 }
 
+function Ensure-BrollDeviceAwake {
+    param(
+        [Parameter(Mandatory = $true)][string]$Serial,
+        [switch]$DryRun
+    )
+
+    if ($DryRun) { return }
+
+    $power = Invoke-BrollAdb -Serial $Serial -Arguments @('shell', 'dumpsys', 'power') -StepDescription 'Checking device wakefulness' -AllowFailure
+    $isAwake = $power.Output -match 'mWakefulness=Awake'
+    if (-not $isAwake) {
+        Invoke-BrollAdb -Serial $Serial -Arguments @('shell', 'input', 'keyevent', 'KEYCODE_WAKEUP') -StepDescription 'Waking device screen' -AllowFailure | Out-Null
+        Start-Sleep -Seconds 1
+    }
+    # Collapse the notification shade in case a stale shade/lockscreen overlay is stuck in focus.
+    Invoke-BrollAdb -Serial $Serial -Arguments @('shell', 'cmd', 'statusbar', 'collapse') -StepDescription 'Collapsing notification shade' -AllowFailure | Out-Null
+}
+
+function Test-BrollForegroundPackage {
+    param(
+        [Parameter(Mandatory = $true)][string]$Serial,
+        [Parameter(Mandatory = $true)][string]$Package
+    )
+
+    $focus = Invoke-BrollAdb -Serial $Serial -Arguments @('shell', 'dumpsys', 'window') -StepDescription 'Checking foreground focus' -AllowFailure
+    $line = ($focus.Output -split "`r?`n") | Where-Object { $_ -match 'mCurrentFocus=' } | Select-Object -Last 1
+    return ($line -and $line -like "*$Package*")
+}
+
 function Invoke-LaunchEmulator {
     param(
         [Parameter(Mandatory = $true)][string]$Serial,
@@ -58,32 +87,62 @@ function Invoke-LaunchEmulator {
     }
 
     $package = [string]$Target.package
+    Ensure-BrollDeviceAwake -Serial $Serial -DryRun:$DryRun
     Invoke-BrollAdb -Serial $Serial -Arguments @('shell', 'am', 'force-stop', $package) -StepDescription "Force-stopping $package" -DryRun:$DryRun | Out-Null
 
+    # Only trust an explicit "am start" intent when it names a component, or an action that
+    # already carries the LAUNCHER category. A bare action like MAIN with neither frequently
+    # fails to resolve ("Error: Activity not started, unable to resolve Intent") and silently
+    # no-ops, leaving whatever was already on screen in place (e.g. the home launcher) - which
+    # would then get recorded as if it were the target app. In that ambiguous case, skip
+    # straight to the monkey launcher fallback below, which reliably resolves via the
+    # LAUNCHER category regardless of app internals.
+    $hasReliableIntent = $false
     if ($Target.ContainsKey('launch') -and $Target.launch) {
         $launch = ConvertTo-BrollHashtable -InputObject $Target.launch
         if ($launch.ContainsKey('intent') -and $launch.intent) {
             $intent = ConvertTo-BrollHashtable -InputObject $launch.intent
-            $args = @('shell', 'am', 'start')
-            if ($intent.ContainsKey('action') -and $intent.action) {
-                $args += @('-a', [string]$intent.action)
+            $hasComponent = $intent.ContainsKey('component') -and $intent.component
+            $hasCategory = $intent.ContainsKey('category') -and $intent.category
+            if ($hasComponent -or $hasCategory) {
+                $args = @('shell', 'am', 'start')
+                if ($intent.ContainsKey('action') -and $intent.action) {
+                    $args += @('-a', [string]$intent.action)
+                }
+                if ($hasCategory) {
+                    $args += @('-c', [string]$intent.category)
+                }
+                if ($intent.ContainsKey('dataUri') -and $intent.dataUri) {
+                    $args += @('-d', [string]$intent.dataUri)
+                }
+                if ($intent.ContainsKey('mimeType') -and $intent.mimeType) {
+                    $args += @('-t', [string]$intent.mimeType)
+                }
+                if ($hasComponent) {
+                    $args += @('-n', [string]$intent.component)
+                }
+                $args += @('-p', $package)
+                Invoke-BrollAdb -Serial $Serial -Arguments $args -StepDescription "Launching $package via am start" -DryRun:$DryRun | Out-Null
+                $hasReliableIntent = $true
             }
-            if ($intent.ContainsKey('dataUri') -and $intent.dataUri) {
-                $args += @('-d', [string]$intent.dataUri)
-            }
-            if ($intent.ContainsKey('mimeType') -and $intent.mimeType) {
-                $args += @('-t', [string]$intent.mimeType)
-            }
-            if ($intent.ContainsKey('component') -and $intent.component) {
-                $args += @('-n', [string]$intent.component)
-            }
-            $args += @('-p', $package)
-            Invoke-BrollAdb -Serial $Serial -Arguments $args -StepDescription "Launching $package via am start" -DryRun:$DryRun | Out-Null
-            return
         }
     }
 
-    Invoke-BrollAdb -Serial $Serial -Arguments @('shell', 'monkey', '-p', $package, '-c', 'android.intent.category.LAUNCHER', '1') -StepDescription "Launching $package via monkey" -DryRun:$DryRun | Out-Null
+    if (-not $hasReliableIntent) {
+        Invoke-BrollAdb -Serial $Serial -Arguments @('shell', 'monkey', '-p', $package, '-c', 'android.intent.category.LAUNCHER', '1') -StepDescription "Launching $package via monkey" -DryRun:$DryRun | Out-Null
+    }
+
+    if (-not $DryRun) {
+        Start-Sleep -Seconds 2
+        if (-not (Test-BrollForegroundPackage -Serial $Serial -Package $package)) {
+            # One retry via the monkey fallback in case the configured intent path didn't take focus.
+            Invoke-BrollAdb -Serial $Serial -Arguments @('shell', 'monkey', '-p', $package, '-c', 'android.intent.category.LAUNCHER', '1') -StepDescription "Launching $package via monkey (retry after launch did not take focus)" -AllowFailure | Out-Null
+            Start-Sleep -Seconds 2
+            if (-not (Test-BrollForegroundPackage -Serial $Serial -Package $package)) {
+                Write-Warning "Launch verification failed: $package is not the foreground focus after launch attempts. The recorded clip may not show the target app."
+            }
+        }
+    }
 }
 
 function Get-SettingsSummary {
