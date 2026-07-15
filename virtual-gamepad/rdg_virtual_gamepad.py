@@ -6,7 +6,6 @@ import json
 import subprocess
 import sys
 import time
-import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
@@ -149,7 +148,7 @@ def _convert_obj_to_numeric(obj: Any) -> Any:
                     converted[key] = str(_hex_or_int(value))
             elif key in ("vid", "pid", "id", "duration", "value", "minimum", "maximum", "fuzz", "flat", "resolution", "ff_effects_max"):
                 converted[key] = str(_hex_or_int(value))
-            elif key == "events":
+            elif key in ("events", "data"):
                 out = []
                 for item in value:
                     if isinstance(item, str) and item in SYMBOLIC_TO_NUMERIC:
@@ -282,16 +281,19 @@ def _build_probe_register(profile: DeviceProfile, schema: str, probe_id: int) ->
 
 
 def probe_schema(serial: str, profile: DeviceProfile) -> Dict[str, Any]:
-    token = f"schema_probe_{uuid.uuid4().hex[:8]}"
+    # NOTE: deliberately do NOT send a "sync" command here. "sync" was only added in
+    # Android 15/mainline's uinput tool; on older (Android 13/14-era) builds it is an
+    # unrecognized command that makes the whole process exit non-zero even though
+    # registration itself succeeded cleanly. Schema success/failure must be judged from
+    # the presence/absence of parse-error text, not the process return code, since a
+    # register-only session on a healthy device also exits non-zero on some builds simply
+    # because stdin closes without an explicit "unregister" (this is normal/expected).
     for schema in ("symbolic", "numeric"):
         register = _build_probe_register(profile, schema, probe_id=99)
-        sync = {"id": 99, "command": "sync", "syncToken": token}
-        if schema == "numeric":
-            sync = _convert_obj_to_numeric(sync)
-        proc = run_uinput_oneshot(serial, [register, sync])
+        proc = run_uinput_oneshot(serial, [register])
         combined = (proc.stdout or "") + "\n" + (proc.stderr or "")
         has_schema_error = any(marker in combined for marker in SCHEMA_HINT_ERROR_TOKENS)
-        success = (proc.returncode == 0) and (not has_schema_error)
+        success = not has_schema_error
         if success:
             return {
                 "schema": schema,

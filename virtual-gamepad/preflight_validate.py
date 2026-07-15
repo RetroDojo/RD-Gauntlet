@@ -47,9 +47,10 @@ def main() -> int:
     product = vg.get_product_name(serial)
     print_step("READ-ONLY", True, f"Detected product: {product or '(unknown)'}")
 
-    proc_help = run_adb(serial, ["shell", "uinput", "--help"], read_only=True)
-    ok_help = proc_help.returncode == 0
-    print_step("READ-ONLY", ok_help, "uinput --help reachable" if ok_help else (proc_help.stderr.strip() or proc_help.stdout.strip()))
+    proc_help = run_adb(serial, ["shell", "command", "-v", "uinput"], read_only=True)
+    ok_help = proc_help.returncode == 0 and bool(proc_help.stdout.strip())
+    detail = f"found at {proc_help.stdout.strip()}" if ok_help else (proc_help.stderr.strip() or proc_help.stdout.strip() or "uinput binary not found on PATH")
+    print_step("READ-ONLY", ok_help, detail)
 
     proc_getevent = run_adb(serial, ["shell", "getevent", "-p"], read_only=True)
     ok_getevent = proc_getevent.returncode == 0
